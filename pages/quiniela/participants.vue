@@ -223,29 +223,65 @@
           <v-alert type="success" variant="tonal">No se detectaron entradas sospechosas en el último escaneo.</v-alert>
         </template>
 
-        <v-card v-else-if="suspiciousEntries.length > 0">
-          <v-data-table
-            :headers="suspiciousHeaders"
-            :items="suspiciousEntries"
-            :loading="suspiciousLoading"
-            item-value="id"
-          >
-            <template #item.reasons="{ item }">
-              <v-chip
-                v-for="r in item.reasons"
-                :key="r.code"
-                :color="r.color"
-                size="small"
-                class="mr-1"
-              >
-                {{ r.label }}
-              </v-chip>
-            </template>
-            <template #item.submittedAt="{ item }">
-              {{ item.submittedAt ? new Date(item.submittedAt).toLocaleString('es-AR') : '—' }}
-            </template>
-          </v-data-table>
-        </v-card>
+        <template v-else-if="suspiciousEntries.length > 0">
+          <!-- Mobile: card list -->
+          <template v-if="$vuetify.display.smAndDown">
+            <v-card
+              v-for="entry in suspiciousEntries"
+              :key="entry.id"
+              class="mb-3"
+              variant="outlined"
+            >
+              <v-card-text class="pb-1">
+                <div class="d-flex justify-space-between align-start mb-1">
+                  <div>
+                    <div class="font-weight-bold text-body-1">{{ entry.alias }}</div>
+                    <div class="text-caption text-medium-emphasis">{{ entry.playerId }}</div>
+                  </div>
+                </div>
+                <div class="text-caption text-medium-emphasis mb-2">
+                  <span class="mr-3">IP: {{ entry.ip ?? '—' }}</span>
+                  <span>{{ entry.submittedAt ? new Date(entry.submittedAt).toLocaleString('es-AR') : '—' }}</span>
+                </div>
+                <div class="d-flex flex-wrap gap-1">
+                  <v-chip
+                    v-for="r in entry.reasons"
+                    :key="r.code"
+                    :color="r.color"
+                    size="small"
+                  >
+                    {{ r.label }}
+                  </v-chip>
+                </div>
+              </v-card-text>
+            </v-card>
+          </template>
+
+          <!-- Desktop: data table -->
+          <v-card v-else>
+            <v-data-table
+              :headers="suspiciousHeaders"
+              :items="suspiciousEntries"
+              :loading="suspiciousLoading"
+              item-value="id"
+            >
+              <template #item.reasons="{ item }">
+                <v-chip
+                  v-for="r in item.reasons"
+                  :key="r.code"
+                  :color="r.color"
+                  size="small"
+                  class="mr-1"
+                >
+                  {{ r.label }}
+                </v-chip>
+              </template>
+              <template #item.submittedAt="{ item }">
+                {{ item.submittedAt ? new Date(item.submittedAt).toLocaleString('es-AR') : '—' }}
+              </template>
+            </v-data-table>
+          </v-card>
+        </template>
       </v-tabs-window-item>
 
     </v-tabs-window>
