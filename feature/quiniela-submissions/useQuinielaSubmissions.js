@@ -4,18 +4,18 @@ function toCompany(playerId) {
   return idx === -1 ? playerId : playerId.substring(0, idx)
 }
 
-const GROUP_KEYS = ['group-a','group-b','group-c','group-d','group-e','group-f','group-g','group-h','group-i','group-j','group-k','group-l']
-const GROUP_LABELS = ['Grupo A','Grupo B','Grupo C','Grupo D','Grupo E','Grupo F','Grupo G','Grupo H','Grupo I','Grupo J','Grupo K','Grupo L']
-
-function submissionsToCsv(rows) {
+function submissionsToCsv(rows, groupsMeta) {
   const baseHeaders = ['company', 'alias', 'playerId', 'status', 'score', 'ip', 'referrer', 'userAgent', 'createdAt']
-  const headers = [...baseHeaders, ...GROUP_LABELS]
+  const headers = [...baseHeaders, ...groupsMeta.map(g => g.name)]
   const escape = v => `"${String(v ?? '').replace(/"/g, '""')}"`
   const lines = [
     headers.join(','),
     ...rows.map(r => {
       const predMap = Object.fromEntries((r.predictions ?? []).map(p => [p.groupId, p.orderedTeams]))
-      const predCols = GROUP_KEYS.map(gk => (predMap[gk] ?? []).join(' > '))
+      const predCols = groupsMeta.map(g => {
+        const teamIds = predMap[g.groupId] ?? []
+        return teamIds.map(tid => g.teamMap[tid] ?? tid).join(' > ')
+      })
       return [
         toCompany(r.playerId),
         r.alias,
@@ -73,6 +73,15 @@ export function useQuinielaSubmissions() {
     }
   }
 
+  async function fetchGroupsMeta() {
+    const { data } = await $axios.get('/backoffice/quiniela/groups', { params: { limit: 100 } })
+    return (data.groups ?? []).map(g => ({
+      groupId: g.groupId,
+      name: g.name,
+      teamMap: Object.fromEntries(g.teams.map(t => [t.id, t.name]))
+    }))
+  }
+
   async function openDrawer(submission) {
     drawerOpen.value = true
     loading.value = true
@@ -105,8 +114,17 @@ export function useQuinielaSubmissions() {
     confirmDeleteOpen.value = true
   }
 
-  function exportSingleCsv(submission) {
-    downloadCsv(submissionsToCsv([submission]), `quiniela-${submission.alias}-${submission.id}.csv`)
+  async function exportSingleCsv(submission) {
+    loading.value = true
+    error.value = ''
+    try {
+      const groupsMeta = await fetchGroupsMeta()
+      downloadCsv(submissionsToCsv([submission], groupsMeta), `quiniela-${submission.alias}-${submission.id}.csv`)
+    } catch (e) {
+      error.value = e.response?.data?.error ?? 'Error al exportar'
+    } finally {
+      loading.value = false
+    }
   }
 
   const EXPORT_LIMIT = 5000
@@ -116,12 +134,19 @@ export function useQuinielaSubmissions() {
     error.value = ''
     try {
       const capped = (total.value || 0) > EXPORT_LIMIT
-      const params = { page: 1, limit: capped ? EXPORT_LIMIT : (total.value || EXPORT_LIMIT) }
-      if (filterStatus.value) params.status = filterStatus.value
-      if (filterSearch.value) params.alias = filterSearch.value
-      const { data } = await $axios.get('/backoffice/quiniela/submissions', { params })
+      const [groupsMeta, { data }] = await Promise.all([
+        fetchGroupsMeta(),
+        $axios.get('/backoffice/quiniela/submissions', {
+          params: {
+            page: 1,
+            limit: capped ? EXPORT_LIMIT : (total.value || EXPORT_LIMIT),
+            ...(filterStatus.value ? { status: filterStatus.value } : {}),
+            ...(filterSearch.value ? { alias: filterSearch.value } : {})
+          }
+        })
+      ])
       const date = new Date().toISOString().slice(0, 10)
-      downloadCsv(submissionsToCsv(data.submissions), `quiniela-participantes-${date}.csv`)
+      downloadCsv(submissionsToCsv(data.submissions, groupsMeta), `quiniela-participantes-${date}.csv`)
       if (capped) {
         error.value = `Se exportaron los primeros ${EXPORT_LIMIT.toLocaleString('es-AR')} registros de ${total.value.toLocaleString('es-AR')} totales.`
       }
