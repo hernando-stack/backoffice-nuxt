@@ -109,16 +109,22 @@ export function useQuinielaSubmissions() {
     downloadCsv(submissionsToCsv([submission]), `quiniela-${submission.alias}-${submission.id}.csv`)
   }
 
+  const EXPORT_LIMIT = 5000
+
   async function exportAllCsv() {
     loading.value = true
     error.value = ''
     try {
-      const params = { page: 1, limit: total.value || 9999 }
+      const capped = (total.value || 0) > EXPORT_LIMIT
+      const params = { page: 1, limit: capped ? EXPORT_LIMIT : (total.value || EXPORT_LIMIT) }
       if (filterStatus.value) params.status = filterStatus.value
       if (filterSearch.value) params.alias = filterSearch.value
       const { data } = await $axios.get('/backoffice/quiniela/submissions', { params })
       const date = new Date().toISOString().slice(0, 10)
       downloadCsv(submissionsToCsv(data.submissions), `quiniela-participantes-${date}.csv`)
+      if (capped) {
+        error.value = `Se exportaron los primeros ${EXPORT_LIMIT.toLocaleString('es-AR')} registros de ${total.value.toLocaleString('es-AR')} totales.`
+      }
     } catch (e) {
       error.value = e.response?.data?.error ?? 'Error al exportar'
     } finally {
