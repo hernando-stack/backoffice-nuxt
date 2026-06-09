@@ -6,6 +6,8 @@ export function useQuinielaConfig() {
   const error = ref('')
   const dialogOpen = ref(false)
   const confirmDeleteOpen = ref(false)
+  const confirmToggleOpen = ref(false)
+  const pendingToggleConfig = ref(null)
   const selectedConfig = ref(null)
   const isEditing = ref(false)
 
@@ -72,7 +74,14 @@ export function useQuinielaConfig() {
     }
   }
 
-  async function toggleStatus(config) {
+  function openConfirmToggle(config) {
+    pendingToggleConfig.value = config
+    confirmToggleOpen.value = true
+  }
+
+  async function confirmToggle() {
+    const config = pendingToggleConfig.value
+    confirmToggleOpen.value = false
     loading.value = true
     error.value = ''
     try {
@@ -80,7 +89,7 @@ export function useQuinielaConfig() {
       await $axios.put(`/backoffice/quiniela/config/${config.id}`, { status: newStatus })
       await fetchConfigs()
     } catch (e) {
-      error.value = e.response?.data?.error ?? 'Error al cambiar estado'
+      error.value = e.response?.data?.error ?? e.message ?? 'Error al cambiar estado'
     } finally {
       loading.value = false
     }
@@ -107,7 +116,7 @@ export function useQuinielaConfig() {
 
   return {
     configs, loading, error,
-    dialogOpen, confirmDeleteOpen, selectedConfig, isEditing,
-    fetchConfigs, openCreate, openEdit, saveConfig, openConfirmDelete, confirmDelete, toggleStatus
+    dialogOpen, confirmDeleteOpen, confirmToggleOpen, pendingToggleConfig, selectedConfig, isEditing,
+    fetchConfigs, openCreate, openEdit, saveConfig, openConfirmDelete, confirmDelete, openConfirmToggle, confirmToggle
   }
 }

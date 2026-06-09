@@ -25,7 +25,7 @@
           :color="activeConfig.status === 'open' ? 'error' : 'success'"
           variant="flat"
           :loading="loading"
-          @click="toggleStatus(activeConfig)"
+          @click="openConfirmToggle(activeConfig)"
         >
           {{ activeConfig.status === 'open' ? 'Cerrar inscripciones' : 'Reabrir inscripciones' }}
         </v-btn>
@@ -104,6 +104,34 @@
       </v-card>
     </v-dialog>
 
+    <!-- Confirm toggle status -->
+    <v-dialog v-model="confirmToggleOpen" max-width="420">
+      <v-card>
+        <v-card-title>
+          {{ pendingToggleConfig?.status === 'open' ? 'Cerrar inscripciones' : 'Reabrir inscripciones' }}
+        </v-card-title>
+        <v-card-text>
+          {{
+            pendingToggleConfig?.status === 'open'
+              ? 'Se van a cerrar las inscripciones. Los jugadores no podrán enviar predicciones hasta que las reactives. ¿Confirmás?'
+              : 'Se van a reabrir las inscripciones. Los jugadores podrán enviar predicciones nuevamente. ¿Confirmás?'
+          }}
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer />
+          <v-btn variant="text" @click="confirmToggleOpen = false">Cancelar</v-btn>
+          <v-btn
+            :color="pendingToggleConfig?.status === 'open' ? 'error' : 'success'"
+            variant="flat"
+            :loading="loading"
+            @click="confirmToggle"
+          >
+            {{ pendingToggleConfig?.status === 'open' ? 'Sí, cerrar' : 'Sí, reabrir' }}
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
     <!-- Confirm delete -->
     <v-dialog v-model="confirmDeleteOpen" max-width="380">
       <v-card>
@@ -126,8 +154,8 @@ definePageMeta({ middleware: 'auth' })
 
 const {
   configs, loading, error,
-  dialogOpen, confirmDeleteOpen, selectedConfig, isEditing,
-  fetchConfigs, openCreate, openEdit, saveConfig, openConfirmDelete, confirmDelete, toggleStatus
+  dialogOpen, confirmDeleteOpen, confirmToggleOpen, pendingToggleConfig, selectedConfig, isEditing,
+  fetchConfigs, openCreate, openEdit, saveConfig, openConfirmDelete, confirmDelete, openConfirmToggle, confirmToggle
 } = useQuinielaConfig()
 
 const activeConfig = computed(() => configs.value?.[0] ?? null)
