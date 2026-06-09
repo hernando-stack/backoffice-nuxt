@@ -10,6 +10,28 @@
       {{ error }}
     </v-alert>
 
+    <!-- Active config status control -->
+    <v-card v-if="activeConfig" class="mb-4" :color="activeConfig.status === 'open' ? 'success' : 'error'" variant="tonal">
+      <v-card-text class="d-flex flex-column flex-sm-row align-sm-center gap-3">
+        <div class="flex-grow-1">
+          <div class="text-subtitle-1 font-weight-bold">
+            {{ activeConfig.status === 'open' ? '✅ Inscripciones abiertas' : '🔒 Inscripciones cerradas' }}
+          </div>
+          <div class="text-body-2">
+            Cierre automático: {{ new Date(activeConfig.cutoffAt).toLocaleString('es-AR') }}
+          </div>
+        </div>
+        <v-btn
+          :color="activeConfig.status === 'open' ? 'error' : 'success'"
+          variant="flat"
+          :loading="loading"
+          @click="toggleStatus(activeConfig)"
+        >
+          {{ activeConfig.status === 'open' ? 'Cerrar inscripciones' : 'Reabrir inscripciones' }}
+        </v-btn>
+      </v-card-text>
+    </v-card>
+
     <!-- Mobile: card list -->
     <template v-if="$vuetify.display.smAndDown">
       <div v-if="loading" class="text-center pa-6">
@@ -105,8 +127,10 @@ definePageMeta({ middleware: 'auth' })
 const {
   configs, loading, error,
   dialogOpen, confirmDeleteOpen, selectedConfig, isEditing,
-  fetchConfigs, openCreate, openEdit, saveConfig, openConfirmDelete, confirmDelete
+  fetchConfigs, openCreate, openEdit, saveConfig, openConfirmDelete, confirmDelete, toggleStatus
 } = useQuinielaConfig()
+
+const activeConfig = computed(() => configs.value?.[0] ?? null)
 
 const headers = [
   { title: 'Estado', key: 'status', sortable: false },
