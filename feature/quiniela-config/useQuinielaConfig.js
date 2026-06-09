@@ -36,10 +36,21 @@ export function useQuinielaConfig() {
     dialogOpen.value = true
   }
 
+  function toArgentinaInputValue(isoString) {
+    if (!isoString) return ''
+    const parts = new Intl.DateTimeFormat('en-CA', {
+      year: 'numeric', month: '2-digit', day: '2-digit',
+      hour: '2-digit', minute: '2-digit', hour12: false,
+      timeZone: 'America/Argentina/Buenos_Aires'
+    }).formatToParts(new Date(isoString))
+    const get = type => parts.find(p => p.type === type).value
+    return `${get('year')}-${get('month')}-${get('day')}T${get('hour')}:${get('minute')}`
+  }
+
   function openEdit(config) {
     selectedConfig.value = {
       _id: config.id,
-      cutoffAt: config.cutoffAt ? config.cutoffAt.substring(0, 16) : '',
+      cutoffAt: toArgentinaInputValue(config.cutoffAt),
       status: config.status,
       currency: config.currency,
       prize: config.prize,
@@ -54,7 +65,7 @@ export function useQuinielaConfig() {
     error.value = ''
     try {
       const payload = {
-        cutoffAt: new Date(selectedConfig.value.cutoffAt).toISOString(),
+        cutoffAt: new Date(selectedConfig.value.cutoffAt + ':00-03:00').toISOString(),
         status: selectedConfig.value.status,
         currency: selectedConfig.value.currency,
         prize: Number(selectedConfig.value.prize),
