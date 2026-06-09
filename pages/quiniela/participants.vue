@@ -69,7 +69,7 @@
             </div>
             <div class="text-caption mt-2 text-medium-emphasis">
               <span class="mr-3">Score: {{ item.score ?? '—' }}</span>
-              <span>{{ new Date(item.createdAt).toLocaleString('es-AR') }}</span>
+              <span>{{ new Date(item.createdAt).toLocaleString('es-AR', { hour12: false, timeZone: 'America/Argentina/Buenos_Aires' }) }}</span>
             </div>
           </v-card-text>
           <v-card-actions>
@@ -106,7 +106,7 @@
           <v-chip :color="statusColor(item.status)" size="small">{{ item.status }}</v-chip>
         </template>
         <template #item.createdAt="{ item }">
-          {{ new Date(item.createdAt).toLocaleString('es-AR') }}
+          {{ new Date(item.createdAt).toLocaleString('es-AR', { hour12: false, timeZone: 'America/Argentina/Buenos_Aires' }) }}
         </template>
         <template #item.actions="{ item }">
           <v-btn size="small" variant="tonal" color="primary" @click="openDrawer(item)">Ver</v-btn>
@@ -137,7 +137,7 @@
             <v-list-item title="IP" :subtitle="selectedSubmission.ip ?? '—'" />
             <v-list-item title="User Agent" :subtitle="selectedSubmission.userAgent ?? '—'" />
             <v-list-item title="Referrer" :subtitle="selectedSubmission.referrer ?? '—'" />
-            <v-list-item title="Fecha" :subtitle="selectedSubmission.createdAt ? new Date(selectedSubmission.createdAt).toLocaleString('es-AR') : '—'" />
+            <v-list-item title="Fecha" :subtitle="selectedSubmission.createdAt ? new Date(selectedSubmission.createdAt).toLocaleString('es-AR', { hour12: false, timeZone: 'America/Argentina/Buenos_Aires' }) : '—'" />
           </v-list>
         </v-card>
 
@@ -211,7 +211,7 @@
             Buscar actividad sospechosa
           </v-btn>
           <span v-if="scannedAt" class="text-caption text-medium-emphasis">
-            Último escaneo: {{ new Date(scannedAt).toLocaleString('es-AR') }}
+            Último escaneo: {{ new Date(scannedAt).toLocaleString('es-AR', { hour12: false, timeZone: 'America/Argentina/Buenos_Aires' }) }}
           </span>
         </div>
 
@@ -241,7 +241,7 @@
                 </div>
                 <div class="text-caption text-medium-emphasis mb-2">
                   <span class="mr-3">IP: {{ entry.ip ?? '—' }}</span>
-                  <span>{{ entry.submittedAt ? new Date(entry.submittedAt).toLocaleString('es-AR') : '—' }}</span>
+                  <span>{{ entry.submittedAt ? new Date(entry.submittedAt).toLocaleString('es-AR', { hour12: false, timeZone: 'America/Argentina/Buenos_Aires' }) : '—' }}</span>
                 </div>
                 <div class="d-flex flex-wrap gap-1">
                   <v-chip
@@ -277,7 +277,7 @@
                 </v-chip>
               </template>
               <template #item.submittedAt="{ item }">
-                {{ item.submittedAt ? new Date(item.submittedAt).toLocaleString('es-AR') : '—' }}
+                {{ item.submittedAt ? new Date(item.submittedAt).toLocaleString('es-AR', { hour12: false, timeZone: 'America/Argentina/Buenos_Aires' }) : '—' }}
               </template>
             </v-data-table>
           </v-card>
