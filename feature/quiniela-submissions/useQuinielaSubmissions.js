@@ -25,7 +25,7 @@ function submissionsToCsv(rows, groupsMeta) {
         r.ip ?? '',
         r.referrer ?? '',
         r.userAgent ?? '',
-        r.createdAt ? new Date(r.createdAt).toLocaleString('es-AR') : '',
+        r.createdAt ? new Date(r.createdAt).toLocaleString('es-AR', { hour12: false, timeZone: 'America/Argentina/Buenos_Aires' }) : '',
         ...predCols
       ].map(escape).join(',')
     })
