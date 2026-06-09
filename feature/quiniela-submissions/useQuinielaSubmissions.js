@@ -4,22 +4,31 @@ function toCompany(playerId) {
   return idx === -1 ? playerId : playerId.substring(0, idx)
 }
 
+const GROUP_KEYS = ['group-a','group-b','group-c','group-d','group-e','group-f','group-g','group-h','group-i','group-j','group-k','group-l']
+const GROUP_LABELS = ['Grupo A','Grupo B','Grupo C','Grupo D','Grupo E','Grupo F','Grupo G','Grupo H','Grupo I','Grupo J','Grupo K','Grupo L']
+
 function submissionsToCsv(rows) {
-  const headers = ['company', 'alias', 'playerId', 'status', 'score', 'ip', 'referrer', 'userAgent', 'createdAt']
+  const baseHeaders = ['company', 'alias', 'playerId', 'status', 'score', 'ip', 'referrer', 'userAgent', 'createdAt']
+  const headers = [...baseHeaders, ...GROUP_LABELS]
   const escape = v => `"${String(v ?? '').replace(/"/g, '""')}"`
   const lines = [
     headers.join(','),
-    ...rows.map(r => [
-      toCompany(r.playerId),
-      r.alias,
-      r.playerId,
-      r.status,
-      r.score ?? '',
-      r.ip ?? '',
-      r.referrer ?? '',
-      r.userAgent ?? '',
-      r.createdAt ? new Date(r.createdAt).toLocaleString('es-AR') : ''
-    ].map(escape).join(','))
+    ...rows.map(r => {
+      const predMap = Object.fromEntries((r.predictions ?? []).map(p => [p.groupId, p.orderedTeams]))
+      const predCols = GROUP_KEYS.map(gk => (predMap[gk] ?? []).join(' > '))
+      return [
+        toCompany(r.playerId),
+        r.alias,
+        r.playerId,
+        r.status,
+        r.score ?? '',
+        r.ip ?? '',
+        r.referrer ?? '',
+        r.userAgent ?? '',
+        r.createdAt ? new Date(r.createdAt).toLocaleString('es-AR') : '',
+        ...predCols
+      ].map(escape).join(',')
+    })
   ]
   return lines.join('\n')
 }
