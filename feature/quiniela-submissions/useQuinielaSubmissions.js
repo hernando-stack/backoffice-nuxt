@@ -1,3 +1,39 @@
+function toCompany(playerId) {
+  if (!playerId) return ''
+  const idx = playerId.indexOf('_')
+  return idx === -1 ? playerId : playerId.substring(0, idx)
+}
+
+function submissionsToCsv(rows) {
+  const headers = ['company', 'alias', 'playerId', 'status', 'score', 'ip', 'referrer', 'userAgent', 'createdAt']
+  const escape = v => `"${String(v ?? '').replace(/"/g, '""')}"`
+  const lines = [
+    headers.join(','),
+    ...rows.map(r => [
+      toCompany(r.playerId),
+      r.alias,
+      r.playerId,
+      r.status,
+      r.score ?? '',
+      r.ip ?? '',
+      r.referrer ?? '',
+      r.userAgent ?? '',
+      r.createdAt ? new Date(r.createdAt).toLocaleString('es-AR') : ''
+    ].map(escape).join(','))
+  ]
+  return lines.join('\n')
+}
+
+function downloadCsv(content, filename) {
+  const blob = new Blob(['﻿' + content], { type: 'text/csv;charset=utf-8;' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = filename
+  a.click()
+  URL.revokeObjectURL(url)
+}
+
 export function useQuinielaSubmissions() {
   const { $axios } = useNuxtApp()
 
@@ -60,6 +96,27 @@ export function useQuinielaSubmissions() {
     confirmDeleteOpen.value = true
   }
 
+  function exportSingleCsv(submission) {
+    downloadCsv(submissionsToCsv([submission]), `quiniela-${submission.alias}-${submission.id}.csv`)
+  }
+
+  async function exportAllCsv() {
+    loading.value = true
+    error.value = ''
+    try {
+      const params = { page: 1, limit: total.value || 9999 }
+      if (filterStatus.value) params.status = filterStatus.value
+      if (filterSearch.value) params.alias = filterSearch.value
+      const { data } = await $axios.get('/backoffice/quiniela/submissions', { params })
+      const date = new Date().toISOString().slice(0, 10)
+      downloadCsv(submissionsToCsv(data.submissions), `quiniela-participantes-${date}.csv`)
+    } catch (e) {
+      error.value = e.response?.data?.error ?? 'Error al exportar'
+    } finally {
+      loading.value = false
+    }
+  }
+
   async function confirmDelete(page = 1, limit = 20) {
     loading.value = true
     error.value = ''
@@ -79,6 +136,7 @@ export function useQuinielaSubmissions() {
     submissions, total, loading, error,
     drawerOpen, selectedSubmission, filterStatus, filterSearch,
     confirmDeleteOpen,
-    fetchSubmissions, openDrawer, updateStatus, openConfirmDelete, confirmDelete
+    fetchSubmissions, openDrawer, updateStatus, openConfirmDelete, confirmDelete,
+    exportSingleCsv, exportAllCsv, toCompany
   }
 }

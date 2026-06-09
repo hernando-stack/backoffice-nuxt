@@ -24,6 +24,13 @@
           clearable
           @update:model-value="fetchSubmissions(1, itemsPerPage)"
         />
+        <v-btn
+          prepend-icon="mdi-download"
+          variant="tonal"
+          color="primary"
+          :loading="loading"
+          @click="exportAllCsv"
+        >Exportar todo</v-btn>
       </div>
     </div>
 
@@ -47,7 +54,7 @@
             <div class="d-flex justify-space-between align-start">
               <div>
                 <div class="font-weight-bold text-body-1">{{ item.alias }}</div>
-                <div class="text-caption text-medium-emphasis">{{ item.playerId }}</div>
+                <div class="text-caption text-medium-emphasis">{{ toCompany(item.playerId) }} · {{ item.playerId }}</div>
               </div>
               <v-chip :color="statusColor(item.status)" size="small">{{ item.status }}</v-chip>
             </div>
@@ -83,6 +90,9 @@
         item-value="id"
         @update:options="onTableUpdate"
       >
+        <template #item.company="{ item }">
+          {{ toCompany(item.playerId) }}
+        </template>
         <template #item.status="{ item }">
           <v-chip :color="statusColor(item.status)" size="small">{{ item.status }}</v-chip>
         </template>
@@ -106,12 +116,14 @@
       <div class="pa-4" v-if="selectedSubmission">
         <div class="d-flex align-center mb-4">
           <v-btn icon="mdi-arrow-left" variant="text" size="small" class="mr-2" @click="drawerOpen = false" />
-          <div class="text-h6">{{ selectedSubmission.alias }}</div>
+          <div class="text-h6 flex-grow-1">{{ selectedSubmission.alias }}</div>
+          <v-btn icon="mdi-download" variant="text" size="small" @click="exportSingleCsv(selectedSubmission)" />
         </div>
 
         <v-card class="mb-4" variant="outlined">
           <v-card-title class="text-subtitle-2">Datos de seguridad</v-card-title>
           <v-list density="compact">
+            <v-list-item title="Empresa" :subtitle="toCompany(selectedSubmission.playerId)" />
             <v-list-item title="Player ID" :subtitle="selectedSubmission.playerId" />
             <v-list-item title="IP" :subtitle="selectedSubmission.ip ?? '—'" />
             <v-list-item title="User Agent" :subtitle="selectedSubmission.userAgent ?? '—'" />
@@ -183,7 +195,8 @@ const {
   submissions, total, loading, error,
   drawerOpen, selectedSubmission, filterStatus, filterSearch,
   confirmDeleteOpen,
-  fetchSubmissions, openDrawer, updateStatus, openConfirmDelete, confirmDelete
+  fetchSubmissions, openDrawer, updateStatus, openConfirmDelete, confirmDelete,
+  exportSingleCsv, exportAllCsv, toCompany
 } = useQuinielaSubmissions()
 
 const page = ref(1)
@@ -191,6 +204,7 @@ const itemsPerPage = ref(20)
 
 const headers = [
   { title: 'Alias', key: 'alias', sortable: false },
+  { title: 'Empresa', key: 'company', sortable: false },
   { title: 'Player ID', key: 'playerId', sortable: false },
   { title: 'Estado', key: 'status', sortable: false },
   { title: 'Score', key: 'score', sortable: false },
