@@ -1,16 +1,46 @@
 <template>
   <div>
     <div class="d-flex align-center mb-4">
-      <h1 class="text-h5">Configuración de la Quiniela</h1>
+      <h1 class="text-h5">Configuración</h1>
       <v-spacer />
-      <v-btn color="primary" prepend-icon="mdi-plus" @click="openCreate">Agregar config</v-btn>
+      <v-btn color="primary" prepend-icon="mdi-plus" @click="openCreate">Agregar</v-btn>
     </div>
 
     <v-alert v-if="error" type="error" density="compact" class="mb-4" closable @click:close="error = ''">
       {{ error }}
     </v-alert>
 
-    <v-card>
+    <!-- Mobile: card list -->
+    <template v-if="$vuetify.display.smAndDown">
+      <div v-if="loading" class="text-center pa-6">
+        <v-progress-circular indeterminate color="primary" />
+      </div>
+      <template v-else>
+        <v-card
+          v-for="item in configs"
+          :key="item.id"
+          class="mb-3"
+          variant="outlined"
+        >
+          <v-card-text class="pb-0">
+            <div class="d-flex justify-space-between align-center mb-2">
+              <v-chip :color="statusColor(item.status)" size="small">{{ item.status }}</v-chip>
+              <span class="text-caption text-medium-emphasis">{{ new Date(item.cutoffAt).toLocaleString('es-AR') }}</span>
+            </div>
+            <div class="text-body-2">Premio: <strong>${{ item.prize?.toLocaleString('es-AR') }} {{ item.currency }}</strong></div>
+            <div class="text-caption text-medium-emphasis">Dep. mínimo: {{ item.minDeposit }}</div>
+          </v-card-text>
+          <v-card-actions>
+            <v-btn size="small" variant="tonal" prepend-icon="mdi-pencil" @click="openEdit(item)">Editar</v-btn>
+            <v-spacer />
+            <v-btn size="small" icon="mdi-delete" variant="text" color="error" @click="openConfirmDelete(item)" />
+          </v-card-actions>
+        </v-card>
+      </template>
+    </template>
+
+    <!-- Desktop: data table -->
+    <v-card v-else>
       <v-data-table
         :headers="headers"
         :items="configs"

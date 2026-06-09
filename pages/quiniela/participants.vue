@@ -1,39 +1,80 @@
 <template>
   <div>
-    <div class="d-flex align-center mb-4">
-      <h1 class="text-h5">Participantes</h1>
-      <v-spacer />
-      <v-text-field
-        v-model="filterSearch"
-        placeholder="Buscar alias o playerId..."
-        prepend-inner-icon="mdi-magnify"
-        variant="outlined"
-        density="compact"
-        hide-details
-        clearable
-        style="max-width:260px"
-        class="mr-3"
-        @update:model-value="fetchSubmissions(1, itemsPerPage)"
-      />
-      <v-select
-        v-model="filterStatus"
-        :items="statusOptions"
-        placeholder="Todos los estados"
-        variant="outlined"
-        density="compact"
-        hide-details
-        clearable
-        style="max-width:200px"
-        class="mr-3"
-        @update:model-value="fetchSubmissions(1, itemsPerPage)"
-      />
+    <!-- Filter bar -->
+    <div class="mb-4">
+      <h1 class="text-h5 mb-3">Participantes</h1>
+      <div class="d-flex flex-column flex-sm-row gap-2">
+        <v-text-field
+          v-model="filterSearch"
+          placeholder="Buscar alias o playerId..."
+          prepend-inner-icon="mdi-magnify"
+          variant="outlined"
+          density="compact"
+          hide-details
+          clearable
+          @update:model-value="fetchSubmissions(1, itemsPerPage)"
+        />
+        <v-select
+          v-model="filterStatus"
+          :items="statusOptions"
+          placeholder="Todos los estados"
+          variant="outlined"
+          density="compact"
+          hide-details
+          clearable
+          @update:model-value="fetchSubmissions(1, itemsPerPage)"
+        />
+      </div>
     </div>
 
     <v-alert v-if="error" type="error" density="compact" class="mb-4" closable @click:close="error = ''">
       {{ error }}
     </v-alert>
 
-    <v-card>
+    <!-- Mobile: card list -->
+    <template v-if="$vuetify.display.smAndDown">
+      <div v-if="loading" class="text-center pa-6">
+        <v-progress-circular indeterminate color="primary" />
+      </div>
+      <template v-else>
+        <v-card
+          v-for="item in submissions"
+          :key="item.id"
+          class="mb-3"
+          variant="outlined"
+        >
+          <v-card-text class="pb-0">
+            <div class="d-flex justify-space-between align-start">
+              <div>
+                <div class="font-weight-bold text-body-1">{{ item.alias }}</div>
+                <div class="text-caption text-medium-emphasis">{{ item.playerId }}</div>
+              </div>
+              <v-chip :color="statusColor(item.status)" size="small">{{ item.status }}</v-chip>
+            </div>
+            <div class="text-caption mt-2 text-medium-emphasis">
+              <span class="mr-3">Score: {{ item.score ?? '—' }}</span>
+              <span>{{ new Date(item.createdAt).toLocaleString('es-AR') }}</span>
+            </div>
+          </v-card-text>
+          <v-card-actions>
+            <v-btn size="small" variant="tonal" color="primary" @click="openDrawer(item)">Ver</v-btn>
+            <v-spacer />
+            <v-btn size="small" icon="mdi-delete" variant="text" color="error" @click="openConfirmDelete(item)" />
+          </v-card-actions>
+        </v-card>
+        <v-pagination
+          v-if="total > itemsPerPage"
+          v-model="page"
+          :length="Math.ceil(total / itemsPerPage)"
+          density="compact"
+          class="mt-2"
+          @update:model-value="p => { page = p; fetchSubmissions(p, itemsPerPage) }"
+        />
+      </template>
+    </template>
+
+    <!-- Desktop: data table -->
+    <v-card v-else>
       <v-data-table-server
         :headers="headers"
         :items="submissions"
@@ -56,9 +97,17 @@
     </v-card>
 
     <!-- Lateral drawer: submission detail -->
-    <v-navigation-drawer v-model="drawerOpen" location="right" width="420" temporary>
+    <v-navigation-drawer
+      v-model="drawerOpen"
+      location="right"
+      :width="$vuetify.display.smAndDown ? '100%' : 420"
+      temporary
+    >
       <div class="pa-4" v-if="selectedSubmission">
-        <div class="text-h6 mb-4">{{ selectedSubmission.alias }}</div>
+        <div class="d-flex align-center mb-4">
+          <v-btn icon="mdi-arrow-left" variant="text" size="small" class="mr-2" @click="drawerOpen = false" />
+          <div class="text-h6">{{ selectedSubmission.alias }}</div>
+        </div>
 
         <v-card class="mb-4" variant="outlined">
           <v-card-title class="text-subtitle-2">Datos de seguridad</v-card-title>
@@ -90,19 +139,21 @@
 
         <v-card variant="outlined">
           <v-card-title class="text-subtitle-2">Pronósticos</v-card-title>
-          <v-table density="compact">
-            <thead>
-              <tr>
-                <th>Grupo</th><th>1°</th><th>2°</th><th>3°</th><th>4°</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="pred in selectedSubmission.predictions" :key="pred.groupId">
-                <td>{{ pred.groupId }}</td>
-                <td v-for="(teamId, i) in pred.orderedTeams" :key="i">{{ teamId }}</td>
-              </tr>
-            </tbody>
-          </v-table>
+          <v-list density="compact">
+            <v-list-item
+              v-for="pred in selectedSubmission.predictions"
+              :key="pred.groupId"
+              :title="pred.groupId"
+            >
+              <template #subtitle>
+                <span
+                  v-for="(teamId, i) in pred.orderedTeams"
+                  :key="i"
+                  class="mr-2"
+                >{{ i + 1 }}° {{ teamId }}</span>
+              </template>
+            </v-list-item>
+          </v-list>
         </v-card>
       </div>
       <div v-else class="pa-4 text-center text-medium-emphasis">Cargando...</div>

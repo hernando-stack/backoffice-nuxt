@@ -3,14 +3,55 @@
     <div class="d-flex align-center mb-4">
       <h1 class="text-h5">Grupos del Mundial</h1>
       <v-spacer />
-      <v-btn color="primary" prepend-icon="mdi-plus" @click="openCreate">Agregar grupo</v-btn>
+      <v-btn color="primary" prepend-icon="mdi-plus" @click="openCreate">Agregar</v-btn>
     </div>
 
     <v-alert v-if="error" type="error" density="compact" class="mb-4" closable @click:close="error = ''">
       {{ error }}
     </v-alert>
 
-    <v-card>
+    <!-- Mobile: card list -->
+    <template v-if="$vuetify.display.smAndDown">
+      <div v-if="loading" class="text-center pa-6">
+        <v-progress-circular indeterminate color="primary" />
+      </div>
+      <template v-else>
+        <v-card
+          v-for="item in groups"
+          :key="item.id"
+          class="mb-3"
+          variant="outlined"
+        >
+          <v-card-text class="pb-0">
+            <div class="d-flex justify-space-between align-center">
+              <div>
+                <div class="font-weight-bold text-body-1">{{ item.name }}</div>
+                <div class="text-caption text-medium-emphasis">{{ item.groupId }}</div>
+              </div>
+            </div>
+            <div class="mt-2 d-flex flex-wrap gap-1">
+              <v-chip v-for="t in item.teams" :key="t.id" size="small">{{ t.name }}</v-chip>
+            </div>
+          </v-card-text>
+          <v-card-actions>
+            <v-btn size="small" variant="tonal" prepend-icon="mdi-pencil" @click="openEdit(item)">Editar</v-btn>
+            <v-spacer />
+            <v-btn size="small" icon="mdi-delete" variant="text" color="error" @click="openConfirmDelete(item)" />
+          </v-card-actions>
+        </v-card>
+        <v-pagination
+          v-if="total > itemsPerPage"
+          v-model="page"
+          :length="Math.ceil(total / itemsPerPage)"
+          density="compact"
+          class="mt-2"
+          @update:model-value="p => { page = p; fetchGroups(p, itemsPerPage) }"
+        />
+      </template>
+    </template>
+
+    <!-- Desktop: data table -->
+    <v-card v-else>
       <v-data-table-server
         :headers="headers"
         :items="groups"
