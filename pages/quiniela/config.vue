@@ -18,7 +18,7 @@
             {{ activeConfig.status === 'open' ? '✅ Inscripciones abiertas' : '🔒 Inscripciones cerradas' }}
           </div>
           <div class="text-body-2">
-            Cierre automático: {{ new Date(activeConfig.cutoffAt).toLocaleString('es-AR') }}
+            Cierre automático: {{ new Date(activeConfig.cutoffAt).toLocaleString('es-AR', { hour12: false, timeZone: 'America/Argentina/Buenos_Aires' }) }}
           </div>
         </div>
         <v-btn
@@ -47,7 +47,7 @@
           <v-card-text class="pb-0">
             <div class="d-flex justify-space-between align-center mb-2">
               <v-chip :color="statusColor(item.status)" size="small">{{ item.status }}</v-chip>
-              <span class="text-caption text-medium-emphasis">{{ new Date(item.cutoffAt).toLocaleString('es-AR') }}</span>
+              <span class="text-caption text-medium-emphasis">{{ new Date(item.cutoffAt).toLocaleString('es-AR', { hour12: false, timeZone: 'America/Argentina/Buenos_Aires' }) }}</span>
             </div>
             <div class="text-body-2">Premio: <strong>${{ item.prize?.toLocaleString('es-AR') }} {{ item.currency }}</strong></div>
             <div class="text-caption text-medium-emphasis">Dep. mínimo: {{ item.minDeposit }}</div>
@@ -73,7 +73,7 @@
           <v-chip :color="statusColor(item.status)" size="small">{{ item.status }}</v-chip>
         </template>
         <template #item.cutoffAt="{ item }">
-          {{ new Date(item.cutoffAt).toLocaleString('es-AR') }}
+          {{ new Date(item.cutoffAt).toLocaleString('es-AR', { hour12: false, timeZone: 'America/Argentina/Buenos_Aires' }) }}
         </template>
         <template #item.prize="{ item }">
           ${{ item.prize?.toLocaleString('es-AR') }} {{ item.currency }}
