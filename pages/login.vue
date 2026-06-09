@@ -1,5 +1,5 @@
 <template>
-  <v-app>
+  <v-app style="background:#F5F5F5">
     <v-main class="bg-surface">
       <v-container class="d-flex align-center justify-center" style="min-height:100vh">
         <v-card width="380" class="pa-6">
@@ -39,6 +39,7 @@
 </template>
 
 <script setup>
+definePageMeta({ layout: 'blank' })
 const config = useRuntimeConfig()
 const router = useRouter()
 
