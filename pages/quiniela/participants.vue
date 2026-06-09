@@ -1,8 +1,17 @@
 <template>
   <div>
+    <h1 class="text-h5 mb-4">Participantes</h1>
+
+    <v-tabs v-model="activeTab" class="mb-4">
+      <v-tab value="participantes">Participantes</v-tab>
+      <v-tab value="sospechosos">Sospechosos</v-tab>
+    </v-tabs>
+
+    <v-tabs-window v-model="activeTab">
+      <!-- ── TAB: PARTICIPANTES ── -->
+      <v-tabs-window-item value="participantes">
     <!-- Filter bar -->
     <div class="mb-4">
-      <h1 class="text-h5 mb-3">Participantes</h1>
       <div class="d-flex flex-column flex-sm-row gap-2">
         <v-text-field
           v-model="filterSearch"
@@ -183,13 +192,73 @@
         </v-card-actions>
       </v-card>
     </v-dialog>
+
+      </v-tabs-window-item>
+
+      <!-- ── TAB: SOSPECHOSOS ── -->
+      <v-tabs-window-item value="sospechosos">
+        <v-alert v-if="suspiciousError" type="error" density="compact" class="mb-4" closable @click:close="suspiciousError = ''">
+          {{ suspiciousError }}
+        </v-alert>
+
+        <div class="d-flex align-center gap-3 mb-4">
+          <v-btn
+            color="warning"
+            prepend-icon="mdi-magnify-scan"
+            :loading="detecting"
+            @click="runDetection"
+          >
+            Buscar actividad sospechosa
+          </v-btn>
+          <span v-if="scannedAt" class="text-caption text-medium-emphasis">
+            Último escaneo: {{ new Date(scannedAt).toLocaleString('es-AR') }}
+          </span>
+        </div>
+
+        <div v-if="suspiciousLoading" class="text-center pa-6">
+          <v-progress-circular indeterminate color="warning" />
+        </div>
+
+        <template v-else-if="suspiciousEntries.length === 0 && scannedAt">
+          <v-alert type="success" variant="tonal">No se detectaron entradas sospechosas en el último escaneo.</v-alert>
+        </template>
+
+        <v-card v-else-if="suspiciousEntries.length > 0">
+          <v-data-table
+            :headers="suspiciousHeaders"
+            :items="suspiciousEntries"
+            :loading="suspiciousLoading"
+            item-value="id"
+          >
+            <template #item.reasons="{ item }">
+              <v-chip
+                v-for="r in item.reasons"
+                :key="r.code"
+                :color="r.color"
+                size="small"
+                class="mr-1"
+              >
+                {{ r.label }}
+              </v-chip>
+            </template>
+            <template #item.submittedAt="{ item }">
+              {{ item.submittedAt ? new Date(item.submittedAt).toLocaleString('es-AR') : '—' }}
+            </template>
+          </v-data-table>
+        </v-card>
+      </v-tabs-window-item>
+
+    </v-tabs-window>
   </div>
 </template>
 
 <script setup>
 import { useQuinielaSubmissions } from '~/feature/quiniela-submissions'
+import { useQuinielaSuspicious } from '~/feature/quiniela-suspicious/useQuinielaSuspicious'
 
 definePageMeta({ middleware: 'auth' })
+
+const activeTab = ref('participantes')
 
 const {
   submissions, total, loading, error,
@@ -198,6 +267,16 @@ const {
   fetchSubmissions, openDrawer, updateStatus, openConfirmDelete, confirmDelete,
   exportSingleCsv, exportAllCsv, toCompany
 } = useQuinielaSubmissions()
+
+const {
+  entries: suspiciousEntries,
+  loading: suspiciousLoading,
+  detecting,
+  error: suspiciousError,
+  scannedAt,
+  fetchSuspicious,
+  runDetection
+} = useQuinielaSuspicious()
 
 const page = ref(1)
 const itemsPerPage = ref(20)
@@ -213,6 +292,14 @@ const headers = [
   { title: 'Acciones', key: 'actions', sortable: false, align: 'end' }
 ]
 
+const suspiciousHeaders = [
+  { title: 'Alias', key: 'alias', sortable: false },
+  { title: 'Player ID', key: 'playerId', sortable: false },
+  { title: 'IP', key: 'ip', sortable: false },
+  { title: 'Fecha envío', key: 'submittedAt', sortable: false },
+  { title: 'Motivos', key: 'reasons', sortable: false }
+]
+
 const statusOptions = ['pending-validation', 'valid', 'invalid', 'disqualified']
 
 function statusColor(s) {
@@ -225,5 +312,8 @@ function onTableUpdate({ page: p, itemsPerPage: ipp }) {
   fetchSubmissions(p, ipp)
 }
 
-onMounted(() => fetchSubmissions())
+onMounted(() => {
+  fetchSubmissions()
+  fetchSuspicious()
+})
 </script>
