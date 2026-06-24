@@ -18,9 +18,13 @@
       </v-list-item>
       <v-divider />
       <v-list density="compact" nav>
+        <v-list-subheader>Quiniela FIFA</v-list-subheader>
         <v-list-item prepend-icon="mdi-account-group" title="Grupos" to="/quiniela/groups" @click="closeOnMobile" />
         <v-list-item prepend-icon="mdi-cog" title="Configuración" to="/quiniela/config" @click="closeOnMobile" />
         <v-list-item prepend-icon="mdi-account-multiple" title="Participantes" to="/quiniela/participants" @click="closeOnMobile" />
+        <v-divider class="my-2" />
+        <v-list-subheader>Mundialista 2026</v-list-subheader>
+        <v-list-item prepend-icon="mdi-trophy" title="Participantes" to="/mundialista/participants" @click="closeOnMobile" />
       </v-list>
       <template #append>
         <v-list density="compact" nav>
