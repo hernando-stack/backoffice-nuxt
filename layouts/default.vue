@@ -24,7 +24,9 @@
         <v-list-item prepend-icon="mdi-account-multiple" title="Participantes" to="/quiniela/participants" @click="closeOnMobile" />
         <v-divider class="my-2" />
         <v-list-subheader>Mundialista 2026</v-list-subheader>
-        <v-list-item prepend-icon="mdi-trophy" title="Participantes" to="/mundialista/participants" @click="closeOnMobile" />
+        <v-list-item prepend-icon="mdi-trophy"        title="Participantes" to="/mundialista/participants" @click="closeOnMobile" />
+        <v-list-item prepend-icon="mdi-calendar-clock" title="Fases"         to="/mundialista/phases"       @click="closeOnMobile" />
+        <v-list-item prepend-icon="mdi-soccer"          title="Partidos"      to="/mundialista/matches"      @click="closeOnMobile" />
       </v-list>
       <template #append>
         <v-list density="compact" nav>

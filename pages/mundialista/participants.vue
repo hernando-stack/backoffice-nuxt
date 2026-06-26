@@ -2,6 +2,14 @@
   <div>
     <h1 class="text-h5 mb-4">Mundialista — Participantes</h1>
 
+    <v-tabs v-model="activeTab" class="mb-4">
+      <v-tab value="participantes">Participantes</v-tab>
+      <v-tab value="sospechosos">Sospechosos</v-tab>
+    </v-tabs>
+
+    <v-window v-model="activeTab">
+      <v-window-item value="participantes">
+
     <!-- Filter bar -->
     <div class="mb-4">
       <div class="d-flex flex-column flex-sm-row gap-2 flex-wrap">
@@ -215,6 +223,56 @@
       <div v-else class="pa-4 text-center text-medium-emphasis">Cargando...</div>
     </v-navigation-drawer>
 
+      </v-window-item>
+
+      <v-window-item value="sospechosos">
+        <div class="d-flex align-center mb-4 gap-3">
+          <v-btn color="warning" prepend-icon="mdi-magnify" :loading="running" @click="runDetection">
+            Buscar actividad sospechosa
+          </v-btn>
+          <span v-if="suspectTotal" class="text-body-2 text-medium-emphasis">
+            {{ suspectTotal }} entradas detectadas
+          </span>
+        </div>
+
+        <v-alert v-if="suspectError" type="error" density="compact" class="mb-4" closable @click:close="suspectError = ''">
+          {{ suspectError }}
+        </v-alert>
+
+        <v-card v-if="suspects.length">
+          <v-data-table
+            :headers="suspectHeaders"
+            :items="suspects"
+            :loading="suspectLoading"
+            density="compact"
+            item-value="id"
+          >
+            <template #item.reason="{ item }">
+              <v-chip
+                v-for="r in item.reason"
+                :key="r"
+                :color="reasonColor(r)"
+                size="x-small"
+                class="mr-1"
+              >{{ r }}</v-chip>
+            </template>
+          </v-data-table>
+          <div class="pa-3 d-flex justify-center">
+            <v-pagination
+              v-model="suspectPage"
+              :length="Math.ceil(suspectTotal / suspectLimit)"
+              density="compact"
+              @update:model-value="fetchSuspects"
+            />
+          </div>
+        </v-card>
+
+        <v-card v-else-if="!suspectLoading && !running" class="pa-8 text-center text-medium-emphasis" variant="outlined">
+          Presioná "Buscar actividad sospechosa" para analizar las participaciones.
+        </v-card>
+      </v-window-item>
+    </v-window>
+
     <!-- Confirm delete dialog -->
     <v-dialog v-model="confirmDeleteOpen" max-width="380">
       <v-card>
@@ -232,8 +290,11 @@
 
 <script setup>
 import { useMundialistaSubmissions } from '~/feature/mundialista-submissions'
+import { useMundialSuspicious } from '~/feature/mundialista-suspicious'
 
 definePageMeta({ middleware: 'auth' })
+
+const activeTab = ref('participantes')
 
 const {
   PHASES,
@@ -270,6 +331,19 @@ function onTableUpdate({ page: p, itemsPerPage: ipp }) {
   itemsPerPage.value = ipp
   fetchSubmissions(p, ipp)
 }
+
+const {
+  suspects, loading: suspectLoading, running, error: suspectError,
+  total: suspectTotal, page: suspectPage, limit: suspectLimit,
+  fetchSuspects, runDetection, reasonColor
+} = useMundialSuspicious()
+
+const suspectHeaders = [
+  { title: 'Alias',   key: 'alias',   sortable: false },
+  { title: 'IP',      key: 'ip',      sortable: false },
+  { title: 'Fase',    key: 'phaseId', sortable: false },
+  { title: 'Razones', key: 'reason',  sortable: false }
+]
 
 onMounted(() => fetchSubmissions())
 </script>
