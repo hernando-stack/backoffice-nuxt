@@ -133,11 +133,12 @@
           <v-card-title class="text-subtitle-2">Datos</v-card-title>
           <v-list density="compact">
             <v-list-item title="User ID"    :subtitle="selected.userId" />
+            <v-list-item title="Company"    :subtitle="selected.company || '—'" />
             <v-list-item title="Fase"       :subtitle="selected.phaseId" />
             <v-list-item title="Tipo"       :subtitle="selected.phaseType" />
-            <v-list-item title="IP"         :subtitle="selected.ip ?? '—'" />
-            <v-list-item title="User Agent" :subtitle="selected.userAgent ?? '—'" />
-            <v-list-item title="Referrer"   :subtitle="selected.referrer ?? '—'" />
+            <v-list-item title="IP"         :subtitle="selected.ip || '—'" />
+            <v-list-item title="User Agent" :subtitle="selected.userAgent || '—'" />
+            <v-list-item title="Referrer"   :subtitle="selected.referrer || '—'" />
             <v-list-item
               title="Fecha"
               :subtitle="selected.createdAt ? new Date(selected.createdAt).toLocaleString('es-AR', { hour12: false, timeZone: 'America/Argentina/Buenos_Aires' }) : '—'"
@@ -246,15 +247,16 @@ const page        = ref(1)
 const itemsPerPage = ref(20)
 
 const headers = [
-  { title: 'Alias',   key: 'alias',     sortable: false },
-  { title: 'User ID', key: 'userId',    sortable: false },
-  { title: 'Fase',    key: 'phaseId',   sortable: false },
-  { title: 'Tipo',    key: 'phaseType', sortable: false },
-  { title: 'Estado',  key: 'status',    sortable: false },
-  { title: 'Score',   key: 'score',     sortable: false },
-  { title: 'IP',      key: 'ip',        sortable: false },
-  { title: 'Fecha',   key: 'createdAt', sortable: false },
-  { title: 'Acciones', key: 'actions',  sortable: false, align: 'end' }
+  { title: 'Alias',    key: 'alias',     sortable: false },
+  { title: 'User ID',  key: 'userId',    sortable: false },
+  { title: 'Company',  key: 'company',   sortable: false },
+  { title: 'Fase',     key: 'phaseId',   sortable: false },
+  { title: 'Tipo',     key: 'phaseType', sortable: false },
+  { title: 'Estado',   key: 'status',    sortable: false },
+  { title: 'Score',    key: 'score',     sortable: false },
+  { title: 'IP',       key: 'ip',        sortable: false },
+  { title: 'Fecha',    key: 'createdAt', sortable: false },
+  { title: 'Acciones', key: 'actions',   sortable: false, align: 'end' }
 ]
 
 const statusOptions = ['pending-validation', 'validated', 'invalid']
