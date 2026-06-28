@@ -15,7 +15,7 @@
         style="min-width: 220px"
         @update:model-value="fetchMatches"
       />
-      <v-btn prepend-icon="mdi-file-excel" variant="tonal" color="success" @click="fileInputRef.click()">
+      <v-btn prepend-icon="mdi-file-excel" variant="tonal" color="success" @click="openFilePicker">
         Importar Excel
       </v-btn>
       <input ref="fileInputRef" type="file" accept=".xlsx,.xls" style="display:none" @change="e => { onFileChange(e.target.files[0]); e.target.value = '' }" />
@@ -152,6 +152,7 @@ import { useMundialistaMatches } from '~/feature/mundialista-matches'
 definePageMeta({ middleware: 'auth' })
 
 const fileInputRef = ref(null)
+function openFilePicker() { fileInputRef.value?.click() }
 
 const {
   PHASE_LIST, selectedPhaseId, matches, loading, error,
