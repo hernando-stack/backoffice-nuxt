@@ -89,20 +89,21 @@ export function useMundialistaMatches() {
       const parsed = []
       const errs = []
       rows.forEach((row, i) => {
-        const fecha   = row['fecha']    ?? row['Fecha']   ?? row['FECHA']
-        const equipoA = row['equipo_a'] ?? row['Equipo A'] ?? row['EQUIPO_A']
-        const equipoB = row['equipo_b'] ?? row['Equipo B'] ?? row['EQUIPO_B']
-        const empate  = row['empate']   ?? row['Empate']  ?? row['EMPATE'] ?? 'No'
+        const fecha   = row['fecha']    ?? row['Fecha']   ?? row['FECHA']   ?? row['Fecha hora Argentina']
+        const equipoA = row['equipo_a'] ?? row['Equipo A'] ?? row['EQUIPO_A'] ?? row['1'] ?? row[1]
+        const equipoB = row['equipo_b'] ?? row['Equipo B'] ?? row['EQUIPO_B'] ?? row['2'] ?? row[2]
+        const empate  = row['empate']   ?? row['Empate']  ?? row['EMPATE']  ?? row['X']  ?? 'No'
         const date = parseExcelDate(fecha)
         if (!date)    errs.push(`Fila ${i + 2}: fecha inválida "${fecha}" — usá formato DD/MM/YYYY HH:mm`)
         if (!equipoA) errs.push(`Fila ${i + 2}: falta equipo_a`)
         if (!equipoB) errs.push(`Fila ${i + 2}: falta equipo_b`)
         if (date && equipoA && equipoB) {
+          const rawEmpate = String(empate).trim().toLowerCase()
           parsed.push({
             date,
             teamA:     String(equipoA).trim(),
             teamB:     String(equipoB).trim(),
-            allowDraw: String(empate).trim().toLowerCase().startsWith('s')
+            allowDraw: rawEmpate.startsWith('s') || rawEmpate === 'empate'
           })
         }
       })
