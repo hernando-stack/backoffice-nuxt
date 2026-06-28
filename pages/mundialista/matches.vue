@@ -64,6 +64,7 @@
     <v-dialog v-model="importDialog" max-width="700">
       <v-card>
         <v-card-title class="pa-4">Confirmar importación — {{ importPreview.length }} partidos</v-card-title>
+        <v-alert type="warning" density="compact" class="mx-4">Esto reemplazará TODOS los partidos actuales de esta fase.</v-alert>
         <v-card-text>
           <v-table density="compact">
             <thead>
