@@ -151,6 +151,8 @@ import { useMundialistaMatches } from '~/feature/mundialista-matches'
 
 definePageMeta({ middleware: 'auth' })
 
+const fileInputRef = ref(null)
+
 const {
   PHASE_LIST, selectedPhaseId, matches, loading, error,
   importPreview, importErrors, importDialog, importLoading,
