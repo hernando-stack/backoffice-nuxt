@@ -15,10 +15,10 @@
         style="min-width: 220px"
         @update:model-value="fetchMatches"
       />
-      <v-btn prepend-icon="mdi-file-excel" variant="tonal" color="success" component="label">
+      <v-btn prepend-icon="mdi-file-excel" variant="tonal" color="success" @click="fileInputRef.click()">
         Importar Excel
-        <input type="file" accept=".xlsx,.xls" hidden @change="e => onFileChange(e.target.files[0])" />
       </v-btn>
+      <input ref="fileInputRef" type="file" accept=".xlsx,.xls" style="display:none" @change="e => { onFileChange(e.target.files[0]); e.target.value = '' }" />
     </div>
 
     <v-alert v-if="importErrors.length" type="warning" density="compact" class="mb-4">
