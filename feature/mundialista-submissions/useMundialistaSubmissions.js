@@ -46,6 +46,7 @@ export function useMundialistaSubmissions() {
   const total         = ref(0)
   const loading       = ref(false)
   const error         = ref('')
+  const exportInfo    = ref('')
   const drawerOpen    = ref(false)
   const selected      = ref(null)
   const filterPhase   = ref('jornada-3')
@@ -126,7 +127,7 @@ export function useMundialistaSubmissions() {
     try {
       const params = {
         page: 1,
-        limit: Math.min(total.value || EXPORT_LIMIT, EXPORT_LIMIT),
+        limit: EXPORT_LIMIT,
         ...(filterPhase.value  ? { phaseId: filterPhase.value }  : {}),
         ...(filterStatus.value ? { status:  filterStatus.value } : {}),
         ...(filterAlias.value  ? { alias:   filterAlias.value }  : {})
@@ -134,9 +135,7 @@ export function useMundialistaSubmissions() {
       const { data } = await $axios.get('/backoffice/mundialista/submissions', { params })
       const date = new Date().toISOString().slice(0, 10)
       downloadCsv(submissionsToCsv(data.submissions), `mundialista-${filterPhase.value || 'all'}-${date}.csv`)
-      if ((total.value || 0) > EXPORT_LIMIT) {
-        error.value = `Se exportaron los primeros ${EXPORT_LIMIT.toLocaleString('es-AR')} registros de ${total.value.toLocaleString('es-AR')} totales.`
-      }
+      exportInfo.value = `CSV generado con ${data.submissions.length} registros. Límite máximo por exportación: ${EXPORT_LIMIT.toLocaleString('es-AR')}.`
     } catch (e) {
       error.value = e.response?.data?.error ?? 'Error al exportar'
     } finally {
@@ -146,7 +145,7 @@ export function useMundialistaSubmissions() {
 
   return {
     PHASES,
-    submissions, total, loading, error,
+    submissions, total, loading, error, exportInfo,
     drawerOpen, selected, filterPhase, filterStatus, filterAlias,
     confirmDeleteOpen,
     fetchSubmissions, openDrawer, updateStatus, openConfirmDelete, confirmDelete, exportAllCsv

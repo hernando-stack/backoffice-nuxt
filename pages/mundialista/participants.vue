@@ -55,6 +55,9 @@
       </div>
     </div>
 
+    <v-alert v-if="exportInfo" type="info" density="compact" class="mb-4" closable @click:close="exportInfo = ''">
+      {{ exportInfo }}
+    </v-alert>
     <v-alert v-if="error" type="error" density="compact" class="mb-4" closable @click:close="error = ''">
       {{ error }}
     </v-alert>
@@ -298,7 +301,7 @@ const activeTab = ref('participantes')
 
 const {
   PHASES,
-  submissions, total, loading, error,
+  submissions, total, loading, error, exportInfo,
   drawerOpen, selected, filterPhase, filterStatus, filterAlias,
   confirmDeleteOpen,
   fetchSubmissions, openDrawer, updateStatus, openConfirmDelete, confirmDelete, exportAllCsv
