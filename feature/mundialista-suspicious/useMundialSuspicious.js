@@ -20,11 +20,17 @@ export function useMundialSuspicious() {
 
   // Chequea si la señal IP_DUP por sí sola está marcando "casi todo" como sospechoso
   // (típico de NAT de operadores móviles, no necesariamente trampa).
-  async function checkIpDupRatio(submissionsTotal) {
-    if (!submissionsTotal) { ipDupWarning.value = null; return }
+  // El total de submissions se trae acá mismo, sin fase (detectSuspicious escanea
+  // todas las fases) — no depende del filtro de fase de la tab Participantes.
+  async function checkIpDupRatio() {
     try {
-      const { data } = await $axios.get('/backoffice/mundialista/suspicious', { params: { code: 'IP_DUP', limit: 1 } })
-      const count = data.total ?? 0
+      const [ipDupRes, submissionsRes] = await Promise.all([
+        $axios.get('/backoffice/mundialista/suspicious', { params: { code: 'IP_DUP', limit: 1 } }),
+        $axios.get('/backoffice/mundialista/submissions', { params: { limit: 1 } })
+      ])
+      const count = ipDupRes.data.total ?? 0
+      const submissionsTotal = submissionsRes.data.total ?? 0
+      if (!submissionsTotal) { ipDupWarning.value = null; return }
       const ratio = count / submissionsTotal
       ipDupWarning.value = ratio >= 0.75 ? { count, submissionsTotal, ratio } : null
     } catch {
@@ -49,13 +55,13 @@ export function useMundialSuspicious() {
     }
   }
 
-  async function runDetection(submissionsTotal) {
+  async function runDetection() {
     running.value = true
     error.value = ''
     try {
       await $axios.post('/backoffice/mundialista/suspicious')
       await fetchSuspects(1)
-      await checkIpDupRatio(submissionsTotal)
+      await checkIpDupRatio()
     } catch (e) {
       error.value = e.response?.data?.error ?? 'Error al ejecutar detección'
     } finally {

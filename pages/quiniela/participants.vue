@@ -214,7 +214,7 @@
             color="warning"
             prepend-icon="mdi-magnify-scan"
             :loading="detecting"
-            @click="runDetection(total)"
+            @click="runDetection()"
           >
             Buscar actividad sospechosa
           </v-btn>

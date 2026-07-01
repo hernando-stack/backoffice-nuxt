@@ -19,9 +19,11 @@
           item-title="label"
           item-value="id"
           label="Fase"
+          placeholder="Todas las fases"
           variant="outlined"
           density="compact"
           hide-details
+          clearable
           style="min-width: 180px"
           @update:model-value="fetchSubmissions(1, itemsPerPage)"
         />
@@ -230,7 +232,7 @@
 
       <v-window-item value="sospechosos">
         <div class="d-flex align-center mb-4 gap-3 flex-wrap">
-          <v-btn color="warning" prepend-icon="mdi-magnify" :loading="running" @click="runDetection(total)">
+          <v-btn color="warning" prepend-icon="mdi-magnify" :loading="running" @click="runDetection()">
             Buscar actividad sospechosa
           </v-btn>
           <v-btn
@@ -301,6 +303,8 @@
             :loading="suspectLoading"
             density="compact"
             item-value="id"
+            items-per-page="-1"
+            hide-default-footer
           >
             <template #item.severity="{ item }">
               <v-chip :color="severityColor(item.severity)" size="small">{{ severityLabel(item.severity) }}</v-chip>

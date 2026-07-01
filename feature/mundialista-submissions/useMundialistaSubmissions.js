@@ -49,7 +49,7 @@ export function useMundialistaSubmissions() {
   const exportInfo    = ref('')
   const drawerOpen    = ref(false)
   const selected      = ref(null)
-  const filterPhase   = ref('jornada-3')
+  const filterPhase   = ref('')
   const filterStatus  = ref('')
   const filterAlias   = ref('')
   const confirmDeleteOpen = ref(false)
