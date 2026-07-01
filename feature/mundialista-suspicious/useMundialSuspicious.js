@@ -16,6 +16,21 @@ export function useMundialSuspicious() {
 
   const filterCode = ref(null)
   const filterSeverity = ref(null)
+  const ipDupWarning = ref(null) // { count, submissionsTotal, ratio } | null when IP_DUP flags most submissions
+
+  // Chequea si la señal IP_DUP por sí sola está marcando "casi todo" como sospechoso
+  // (típico de NAT de operadores móviles, no necesariamente trampa).
+  async function checkIpDupRatio(submissionsTotal) {
+    if (!submissionsTotal) { ipDupWarning.value = null; return }
+    try {
+      const { data } = await $axios.get('/backoffice/mundialista/suspicious', { params: { code: 'IP_DUP', limit: 1 } })
+      const count = data.total ?? 0
+      const ratio = count / submissionsTotal
+      ipDupWarning.value = ratio >= 0.75 ? { count, submissionsTotal, ratio } : null
+    } catch {
+      // chequeo secundario, no crítico — si falla no bloquea el flujo principal
+    }
+  }
 
   async function fetchSuspects(p = 1) {
     loading.value = true
@@ -34,12 +49,13 @@ export function useMundialSuspicious() {
     }
   }
 
-  async function runDetection() {
+  async function runDetection(submissionsTotal) {
     running.value = true
     error.value = ''
     try {
       await $axios.post('/backoffice/mundialista/suspicious')
       await fetchSuspects(1)
+      await checkIpDupRatio(submissionsTotal)
     } catch (e) {
       error.value = e.response?.data?.error ?? 'Error al ejecutar detección'
     } finally {
@@ -76,7 +92,7 @@ export function useMundialSuspicious() {
 
   return {
     suspects, loading, running, exporting, error, total, page, limit,
-    filterCode, filterSeverity,
+    filterCode, filterSeverity, ipDupWarning,
     fetchSuspects, runDetection, exportExcel
   }
 }

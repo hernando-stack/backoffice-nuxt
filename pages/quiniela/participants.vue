@@ -201,12 +201,20 @@
           {{ suspiciousError }}
         </v-alert>
 
+        <v-alert v-if="ipDupWarning" type="warning" variant="tonal" density="comfortable" class="mb-4" closable @click:close="ipDupWarning = null">
+          <strong>{{ ipDupWarning.count }} de {{ ipDupWarning.submissionsTotal }} participaciones</strong>
+          ({{ Math.round(ipDupWarning.ratio * 100) }}%) están marcadas como sospechosas solo por
+          <strong>"IP duplicada"</strong>. Es muy probable que se deba a NAT de operadores móviles
+          (muchos jugadores reales comparten la misma IP pública del operador), no necesariamente a trampa.
+          Revisá esta señal en conjunto con otras antes de marcar algo como inválido solo por esto.
+        </v-alert>
+
         <div class="d-flex align-center gap-3 mb-4 flex-wrap">
           <v-btn
             color="warning"
             prepend-icon="mdi-magnify-scan"
             :loading="detecting"
-            @click="runDetection"
+            @click="runDetection(total)"
           >
             Buscar actividad sospechosa
           </v-btn>
@@ -387,6 +395,7 @@ const {
   scannedAt,
   filterCode,
   filterSeverity,
+  ipDupWarning,
   fetchSuspicious,
   runDetection,
   exportExcel

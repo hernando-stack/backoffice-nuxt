@@ -230,7 +230,7 @@
 
       <v-window-item value="sospechosos">
         <div class="d-flex align-center mb-4 gap-3 flex-wrap">
-          <v-btn color="warning" prepend-icon="mdi-magnify" :loading="running" @click="runDetection">
+          <v-btn color="warning" prepend-icon="mdi-magnify" :loading="running" @click="runDetection(total)">
             Buscar actividad sospechosa
           </v-btn>
           <v-btn
@@ -283,6 +283,15 @@
 
         <v-alert v-if="suspectError" type="error" density="compact" class="mb-4" closable @click:close="suspectError = ''">
           {{ suspectError }}
+        </v-alert>
+
+        <v-alert v-if="ipDupWarning" type="warning" variant="tonal" density="comfortable" class="mb-4" closable @click:close="ipDupWarning = null">
+          <strong>{{ ipDupWarning.count }} de {{ ipDupWarning.submissionsTotal }} participaciones</strong>
+          ({{ Math.round(ipDupWarning.ratio * 100) }}%) están marcadas como sospechosas solo por
+          <strong>"IP duplicada"</strong>. Es muy probable que se deba a NAT de operadores móviles
+          (muchos jugadores reales comparten la misma IP pública del operador), no necesariamente a trampa.
+          Revisá esta señal en conjunto con otras (bot, referencias inválidas, envío incompleto) antes de
+          marcar algo como inválido solo por esto.
         </v-alert>
 
         <v-card v-if="suspects.length">
@@ -413,7 +422,7 @@ function onTableUpdate({ page: p, itemsPerPage: ipp }) {
 const {
   suspects, loading: suspectLoading, running, exporting, error: suspectError,
   total: suspectTotal, page: suspectPage, limit: suspectLimit,
-  filterCode, filterSeverity,
+  filterCode, filterSeverity, ipDupWarning,
   fetchSuspects, runDetection, exportExcel
 } = useMundialSuspicious()
 

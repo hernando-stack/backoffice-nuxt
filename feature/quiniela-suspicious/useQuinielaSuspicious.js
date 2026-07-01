@@ -15,6 +15,21 @@ export function useQuinielaSuspicious() {
 
   const filterCode = ref(null)
   const filterSeverity = ref(null)
+  const ipDupWarning = ref(null) // { count, submissionsTotal, ratio } | null cuando IP_DUP marca casi todo
+
+  // Chequea si la señal IP_DUP por sí sola está marcando "casi todo" como sospechoso
+  // (típico de NAT de operadores móviles, no necesariamente trampa).
+  async function checkIpDupRatio(submissionsTotal) {
+    if (!submissionsTotal) { ipDupWarning.value = null; return }
+    try {
+      const { data } = await $axios.get('/backoffice/quiniela/suspicious', { params: { code: 'IP_DUP', limit: 1 } })
+      const count = data.total ?? 0
+      const ratio = count / submissionsTotal
+      ipDupWarning.value = ratio >= 0.75 ? { count, submissionsTotal, ratio } : null
+    } catch {
+      // chequeo secundario, no crítico — si falla no bloquea el flujo principal
+    }
+  }
 
   async function fetchSuspicious() {
     loading.value = true
@@ -33,13 +48,14 @@ export function useQuinielaSuspicious() {
     }
   }
 
-  async function runDetection() {
+  async function runDetection(submissionsTotal) {
     detecting.value = true
     error.value = ''
     try {
       const { data } = await $axios.post('/backoffice/quiniela/suspicious')
       scannedAt.value = data.scannedAt
       await fetchSuspicious()
+      await checkIpDupRatio(submissionsTotal)
     } catch (e) {
       error.value = e.response?.data?.error ?? e.message ?? 'Error al ejecutar detección'
     } finally {
@@ -77,7 +93,7 @@ export function useQuinielaSuspicious() {
 
   return {
     entries, total, loading, detecting, exporting, error, scannedAt,
-    filterCode, filterSeverity,
+    filterCode, filterSeverity, ipDupWarning,
     fetchSuspicious, runDetection, exportExcel
   }
 }
