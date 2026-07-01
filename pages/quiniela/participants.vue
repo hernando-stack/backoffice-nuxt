@@ -82,6 +82,7 @@
           v-if="total > itemsPerPage"
           v-model="page"
           :length="Math.ceil(total / itemsPerPage)"
+          total-visible="7"
           density="compact"
           class="mt-2"
           @update:model-value="p => { page = p; fetchSubmissions(p, itemsPerPage) }"

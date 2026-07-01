@@ -99,6 +99,7 @@
           v-if="total > itemsPerPage"
           v-model="page"
           :length="Math.ceil(total / itemsPerPage)"
+          total-visible="7"
           density="compact"
           class="mt-2"
           @update:model-value="p => { page = p; fetchSubmissions(p, itemsPerPage) }"
@@ -321,6 +322,7 @@
             <v-pagination
               v-model="suspectPage"
               :length="Math.ceil(suspectTotal / suspectLimit)"
+              total-visible="7"
               density="compact"
               @update:model-value="fetchSuspects"
             />

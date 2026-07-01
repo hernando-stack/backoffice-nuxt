@@ -12,7 +12,7 @@ export function useMundialSuspicious() {
   const error = ref('')
   const total = ref(0)
   const page = ref(1)
-  const limit = 20
+  const limit = 50
 
   const filterCode = ref(null)
   const filterSeverity = ref(null)
