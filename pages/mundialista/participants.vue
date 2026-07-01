@@ -313,7 +313,14 @@
             <template #item.reason="{ item }">
               <v-tooltip v-for="r in item.reason" :key="r.code" :text="r.detail || r.label">
                 <template #activator="{ props }">
-                  <v-chip v-bind="props" :color="r.color" size="x-small" class="mr-1 mb-1">{{ r.label }}</v-chip>
+                  <v-chip
+                    v-bind="props"
+                    :color="r.color"
+                    size="x-small"
+                    class="mr-1 mb-1"
+                    style="cursor: pointer"
+                    @click="openReasonModal(r, item)"
+                  >{{ r.label }}</v-chip>
                 </template>
               </v-tooltip>
             </template>
@@ -365,6 +372,13 @@
       </v-card>
     </v-dialog>
 
+    <SuspiciousReasonModal
+      v-model="showReasonModal"
+      :reason="selectedReason"
+      :record="selectedRecord"
+      system="mundialista"
+    />
+
     <!-- Confirm delete dialog -->
     <v-dialog v-model="confirmDeleteOpen" max-width="380">
       <v-card>
@@ -384,6 +398,7 @@
 import { useMundialistaSubmissions } from '~/feature/mundialista-submissions'
 import { useMundialSuspicious } from '~/feature/mundialista-suspicious'
 import { SEVERITY_META, SEVERITY_ORDER, reasonOptions } from '~/feature/suspicious-shared/reasonCatalog'
+import SuspiciousReasonModal from '~/feature/suspicious-shared/SuspiciousReasonModal.vue'
 
 definePageMeta({ middleware: 'auth' })
 
@@ -441,6 +456,15 @@ const suspectHeaders = [
 ]
 
 const showInfoModal = ref(false)
+
+const showReasonModal = ref(false)
+const selectedReason = ref(null)
+const selectedRecord = ref(null)
+function openReasonModal(reason, record) {
+  selectedReason.value = reason
+  selectedRecord.value = record
+  showReasonModal.value = true
+}
 
 const reasonSelectItems = reasonOptions().map(r => ({ code: r.code, title: r.label }))
 const severitySelectItems = SEVERITY_ORDER.map(s => ({ value: s, title: SEVERITY_META[s].label }))

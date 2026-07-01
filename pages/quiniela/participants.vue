@@ -302,6 +302,8 @@
                     :key="r.code"
                     :color="r.color"
                     size="small"
+                    style="cursor: pointer"
+                    @click="openReasonModal(r, entry)"
                   >
                     {{ r.label }}
                   </v-chip>
@@ -317,6 +319,8 @@
               :items="suspiciousEntries"
               :loading="suspiciousLoading"
               item-value="id"
+              items-per-page="-1"
+              hide-default-footer
             >
               <template #item.severity="{ item }">
                 <v-chip :color="severityColor(item.severity)" size="small">{{ severityLabel(item.severity) }}</v-chip>
@@ -324,7 +328,14 @@
               <template #item.reasons="{ item }">
                 <v-tooltip v-for="r in item.reasons" :key="r.code" :text="r.detail || r.label">
                   <template #activator="{ props }">
-                    <v-chip v-bind="props" :color="r.color" size="small" class="mr-1 mb-1">{{ r.label }}</v-chip>
+                    <v-chip
+                      v-bind="props"
+                      :color="r.color"
+                      size="small"
+                      class="mr-1 mb-1"
+                      style="cursor: pointer"
+                      @click="openReasonModal(r, item)"
+                    >{{ r.label }}</v-chip>
                   </template>
                 </v-tooltip>
               </template>
@@ -367,6 +378,13 @@
         </v-card-actions>
       </v-card>
     </v-dialog>
+
+    <SuspiciousReasonModal
+      v-model="showReasonModal"
+      :reason="selectedReason"
+      :record="selectedRecord"
+      system="quiniela"
+    />
   </div>
 </template>
 
@@ -374,6 +392,7 @@
 import { useQuinielaSubmissions } from '~/feature/quiniela-submissions'
 import { useQuinielaSuspicious } from '~/feature/quiniela-suspicious/useQuinielaSuspicious'
 import { SEVERITY_META, SEVERITY_ORDER, reasonOptions } from '~/feature/suspicious-shared/reasonCatalog'
+import SuspiciousReasonModal from '~/feature/suspicious-shared/SuspiciousReasonModal.vue'
 
 definePageMeta({ middleware: 'auth' })
 
@@ -404,6 +423,15 @@ const {
 } = useQuinielaSuspicious()
 
 const showInfoModal = ref(false)
+
+const showReasonModal = ref(false)
+const selectedReason = ref(null)
+const selectedRecord = ref(null)
+function openReasonModal(reason, record) {
+  selectedReason.value = reason
+  selectedRecord.value = record
+  showReasonModal.value = true
+}
 
 const reasonSelectItems = reasonOptions().map(r => ({ code: r.code, title: r.label }))
 const severitySelectItems = SEVERITY_ORDER.map(s => ({ value: s, title: SEVERITY_META[s].label }))
