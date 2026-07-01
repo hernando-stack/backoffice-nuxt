@@ -257,6 +257,20 @@
 
         <div class="d-flex flex-column flex-sm-row gap-2 flex-wrap mb-4">
           <v-select
+            v-model="filterSuspectPhase"
+            :items="PHASES"
+            item-title="label"
+            item-value="id"
+            label="Filtrar por fase"
+            placeholder="Todas las fases"
+            variant="outlined"
+            density="compact"
+            hide-details
+            clearable
+            style="min-width: 180px"
+            @update:model-value="fetchSuspects(1)"
+          />
+          <v-select
             v-model="filterCode"
             :items="reasonSelectItems"
             item-title="title"
@@ -443,7 +457,7 @@ function onTableUpdate({ page: p, itemsPerPage: ipp }) {
 const {
   suspects, loading: suspectLoading, running, exporting, error: suspectError,
   total: suspectTotal, page: suspectPage, limit: suspectLimit,
-  filterCode, filterSeverity, ipDupWarning,
+  filterCode, filterSeverity, filterPhase: filterSuspectPhase, ipDupWarning,
   fetchSuspects, runDetection, exportExcel, checkIpDupRatio
 } = useMundialSuspicious()
 

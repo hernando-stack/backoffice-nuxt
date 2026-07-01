@@ -16,6 +16,7 @@ export function useMundialSuspicious() {
 
   const filterCode = ref(null)
   const filterSeverity = ref(null)
+  const filterPhase = ref(null)
   const ipDupWarning = ref(null) // { count, submissionsTotal, ratio } | null when IP_DUP flags most submissions
 
   // Chequea si la señal IP_DUP por sí sola está marcando "casi todo" como sospechoso
@@ -44,7 +45,12 @@ export function useMundialSuspicious() {
     page.value = p
     try {
       const { data } = await $axios.get('/backoffice/mundialista/suspicious', {
-        params: { page: p, limit, code: filterCode.value || undefined, severity: filterSeverity.value || undefined }
+        params: {
+          page: p, limit,
+          code: filterCode.value || undefined,
+          severity: filterSeverity.value || undefined,
+          phaseId: filterPhase.value || undefined
+        }
       })
       suspects.value = data.suspects ?? data.data ?? []
       total.value = data.total ?? suspects.value.length
@@ -74,7 +80,12 @@ export function useMundialSuspicious() {
     error.value = ''
     try {
       const { data } = await $axios.get('/backoffice/mundialista/suspicious', {
-        params: { page: 1, limit: EXPORT_LIMIT, code: filterCode.value || undefined, severity: filterSeverity.value || undefined }
+        params: {
+          page: 1, limit: EXPORT_LIMIT,
+          code: filterCode.value || undefined,
+          severity: filterSeverity.value || undefined,
+          phaseId: filterPhase.value || undefined
+        }
       })
       const rows = (data.suspects ?? []).map((s) => ({
         alias: s.alias,
@@ -98,7 +109,7 @@ export function useMundialSuspicious() {
 
   return {
     suspects, loading, running, exporting, error, total, page, limit,
-    filterCode, filterSeverity, ipDupWarning,
+    filterCode, filterSeverity, filterPhase, ipDupWarning,
     fetchSuspects, runDetection, exportExcel, checkIpDupRatio
   }
 }
