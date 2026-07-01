@@ -99,6 +99,6 @@ export function useMundialSuspicious() {
   return {
     suspects, loading, running, exporting, error, total, page, limit,
     filterCode, filterSeverity, ipDupWarning,
-    fetchSuspects, runDetection, exportExcel
+    fetchSuspects, runDetection, exportExcel, checkIpDupRatio
   }
 }

@@ -99,6 +99,6 @@ export function useQuinielaSuspicious() {
   return {
     entries, total, loading, detecting, exporting, error, scannedAt,
     filterCode, filterSeverity, ipDupWarning,
-    fetchSuspicious, runDetection, exportExcel
+    fetchSuspicious, runDetection, exportExcel, checkIpDupRatio
   }
 }

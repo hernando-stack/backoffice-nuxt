@@ -427,7 +427,7 @@ const {
   suspects, loading: suspectLoading, running, exporting, error: suspectError,
   total: suspectTotal, page: suspectPage, limit: suspectLimit,
   filterCode, filterSeverity, ipDupWarning,
-  fetchSuspects, runDetection, exportExcel
+  fetchSuspects, runDetection, exportExcel, checkIpDupRatio
 } = useMundialSuspicious()
 
 const suspectHeaders = [
@@ -450,5 +450,9 @@ function severityLabel(sv) {
   return SEVERITY_META[sv]?.label ?? sv
 }
 
-onMounted(() => fetchSubmissions())
+onMounted(() => {
+  fetchSubmissions()
+  fetchSuspects()
+  checkIpDupRatio()
+})
 </script>

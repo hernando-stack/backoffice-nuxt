@@ -398,7 +398,8 @@ const {
   ipDupWarning,
   fetchSuspicious,
   runDetection,
-  exportExcel
+  exportExcel,
+  checkIpDupRatio
 } = useQuinielaSuspicious()
 
 const showInfoModal = ref(false)
@@ -451,5 +452,6 @@ function onTableUpdate({ page: p, itemsPerPage: ipp }) {
 onMounted(() => {
   fetchSubmissions()
   fetchSuspicious()
+  checkIpDupRatio()
 })
 </script>
