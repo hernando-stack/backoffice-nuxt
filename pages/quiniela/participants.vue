@@ -201,7 +201,7 @@
           {{ suspiciousError }}
         </v-alert>
 
-        <div class="d-flex align-center gap-3 mb-4">
+        <div class="d-flex align-center gap-3 mb-4 flex-wrap">
           <v-btn
             color="warning"
             prepend-icon="mdi-magnify-scan"
@@ -210,9 +210,52 @@
           >
             Buscar actividad sospechosa
           </v-btn>
+          <v-btn
+            prepend-icon="mdi-file-excel"
+            variant="tonal"
+            color="success"
+            :loading="exporting"
+            :disabled="!suspiciousEntries.length"
+            @click="exportExcel"
+          >Exportar Excel</v-btn>
+          <v-btn
+            icon="mdi-information-outline"
+            variant="text"
+            density="comfortable"
+            @click="showInfoModal = true"
+          />
           <span v-if="scannedAt" class="text-caption text-medium-emphasis">
             Último escaneo: {{ new Date(scannedAt).toLocaleString('es-AR', { hour12: false, timeZone: 'America/Argentina/Buenos_Aires' }) }}
           </span>
+        </div>
+
+        <div class="d-flex flex-column flex-sm-row gap-2 flex-wrap mb-4">
+          <v-select
+            v-model="filterCode"
+            :items="reasonSelectItems"
+            item-title="title"
+            item-value="code"
+            label="Filtrar por tag"
+            variant="outlined"
+            density="compact"
+            hide-details
+            clearable
+            style="min-width: 220px"
+            @update:model-value="fetchSuspicious"
+          />
+          <v-select
+            v-model="filterSeverity"
+            :items="severitySelectItems"
+            item-title="title"
+            item-value="value"
+            label="Filtrar por severidad"
+            variant="outlined"
+            density="compact"
+            hide-details
+            clearable
+            style="min-width: 200px"
+            @update:model-value="fetchSuspicious"
+          />
         </div>
 
         <div v-if="suspiciousLoading" class="text-center pa-6">
@@ -238,6 +281,7 @@
                     <div class="font-weight-bold text-body-1">{{ entry.alias }}</div>
                     <div class="text-caption text-medium-emphasis">{{ entry.playerId }}</div>
                   </div>
+                  <v-chip :color="severityColor(entry.severity)" size="small">{{ severityLabel(entry.severity) }}</v-chip>
                 </div>
                 <div class="text-caption text-medium-emphasis mb-2">
                   <span class="mr-3">IP: {{ entry.ip ?? '—' }}</span>
@@ -265,16 +309,15 @@
               :loading="suspiciousLoading"
               item-value="id"
             >
+              <template #item.severity="{ item }">
+                <v-chip :color="severityColor(item.severity)" size="small">{{ severityLabel(item.severity) }}</v-chip>
+              </template>
               <template #item.reasons="{ item }">
-                <v-chip
-                  v-for="r in item.reasons"
-                  :key="r.code"
-                  :color="r.color"
-                  size="small"
-                  class="mr-1"
-                >
-                  {{ r.label }}
-                </v-chip>
+                <v-tooltip v-for="r in item.reasons" :key="r.code" :text="r.detail || r.label">
+                  <template #activator="{ props }">
+                    <v-chip v-bind="props" :color="r.color" size="small" class="mr-1 mb-1">{{ r.label }}</v-chip>
+                  </template>
+                </v-tooltip>
               </template>
               <template #item.submittedAt="{ item }">
                 {{ item.submittedAt ? new Date(item.submittedAt).toLocaleString('es-AR', { hour12: false, timeZone: 'America/Argentina/Buenos_Aires' }) : '—' }}
@@ -285,12 +328,43 @@
       </v-tabs-window-item>
 
     </v-tabs-window>
+
+    <!-- Info modal: qué significa cada tag de sospechoso -->
+    <v-dialog v-model="showInfoModal" max-width="640">
+      <v-card>
+        <v-card-title>¿Qué significa cada tag?</v-card-title>
+        <v-card-text>
+          <div v-for="sev in SEVERITY_ORDER" :key="sev" class="mb-4">
+            <div class="text-overline mb-1">
+              <v-chip :color="SEVERITY_META[sev].color" size="small" class="mr-2">{{ SEVERITY_META[sev].label }}</v-chip>
+            </div>
+            <div
+              v-for="opt in reasonOptions().filter(r => r.severity === sev)"
+              :key="opt.code"
+              class="mb-2 pl-2"
+              style="border-left: 3px solid rgba(0,0,0,0.1)"
+            >
+              <div class="font-weight-bold">{{ opt.label }}</div>
+              <div class="text-body-2 text-medium-emphasis">{{ opt.description }}</div>
+            </div>
+          </div>
+          <p class="text-caption text-medium-emphasis mt-2">
+            La severidad general de un registro se calcula combinando todas sus razones: 2 o más razones "Alto" juntas escalan a "Crítico".
+          </p>
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer />
+          <v-btn variant="text" @click="showInfoModal = false">Cerrar</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
   </div>
 </template>
 
 <script setup>
 import { useQuinielaSubmissions } from '~/feature/quiniela-submissions'
 import { useQuinielaSuspicious } from '~/feature/quiniela-suspicious/useQuinielaSuspicious'
+import { SEVERITY_META, SEVERITY_ORDER, reasonOptions } from '~/feature/suspicious-shared/reasonCatalog'
 
 definePageMeta({ middleware: 'auth' })
 
@@ -308,11 +382,27 @@ const {
   entries: suspiciousEntries,
   loading: suspiciousLoading,
   detecting,
+  exporting,
   error: suspiciousError,
   scannedAt,
+  filterCode,
+  filterSeverity,
   fetchSuspicious,
-  runDetection
+  runDetection,
+  exportExcel
 } = useQuinielaSuspicious()
+
+const showInfoModal = ref(false)
+
+const reasonSelectItems = reasonOptions().map(r => ({ code: r.code, title: r.label }))
+const severitySelectItems = SEVERITY_ORDER.map(s => ({ value: s, title: SEVERITY_META[s].label }))
+
+function severityColor(sv) {
+  return SEVERITY_META[sv]?.color ?? 'grey'
+}
+function severityLabel(sv) {
+  return SEVERITY_META[sv]?.label ?? sv
+}
 
 const page = ref(1)
 const itemsPerPage = ref(20)
@@ -333,6 +423,7 @@ const suspiciousHeaders = [
   { title: 'Player ID', key: 'playerId', sortable: false },
   { title: 'IP', key: 'ip', sortable: false },
   { title: 'Fecha envío', key: 'submittedAt', sortable: false },
+  { title: 'Severidad', key: 'severity', sortable: false },
   { title: 'Motivos', key: 'reasons', sortable: false }
 ]
 

@@ -1,3 +1,7 @@
+import * as XLSX from 'xlsx'
+
+const EXPORT_LIMIT = 5000
+
 export function useQuinielaSuspicious() {
   const { $axios } = useNuxtApp()
 
@@ -5,14 +9,20 @@ export function useQuinielaSuspicious() {
   const total = ref(0)
   const loading = ref(false)
   const detecting = ref(false)
+  const exporting = ref(false)
   const error = ref('')
   const scannedAt = ref(null)
+
+  const filterCode = ref(null)
+  const filterSeverity = ref(null)
 
   async function fetchSuspicious() {
     loading.value = true
     error.value = ''
     try {
-      const { data } = await $axios.get('/backoffice/quiniela/suspicious')
+      const { data } = await $axios.get('/backoffice/quiniela/suspicious', {
+        params: { code: filterCode.value || undefined, severity: filterSeverity.value || undefined }
+      })
       entries.value = data.entries ?? []
       total.value = data.total ?? 0
       if (data.entries?.length) scannedAt.value = data.entries[0].scannedAt
@@ -37,5 +47,37 @@ export function useQuinielaSuspicious() {
     }
   }
 
-  return { entries, total, loading, detecting, error, scannedAt, fetchSuspicious, runDetection }
+  async function exportExcel() {
+    exporting.value = true
+    error.value = ''
+    try {
+      const { data } = await $axios.get('/backoffice/quiniela/suspicious', {
+        params: { page: 1, limit: EXPORT_LIMIT, code: filterCode.value || undefined, severity: filterSeverity.value || undefined }
+      })
+      const rows = (data.entries ?? []).map((e) => ({
+        alias: e.alias,
+        playerId: e.playerId,
+        ip: e.ip ?? '',
+        severidad: e.severity,
+        fecha: e.submittedAt ? new Date(e.submittedAt).toISOString() : '',
+        razones: e.reasons.map((r) => r.label).join(' | '),
+        detalle: e.reasons.map((r) => r.detail).filter(Boolean).join(' | ')
+      }))
+      const ws = XLSX.utils.json_to_sheet(rows)
+      const wb = XLSX.utils.book_new()
+      XLSX.utils.book_append_sheet(wb, ws, 'Sospechosos')
+      const date = new Date().toISOString().slice(0, 10)
+      XLSX.writeFile(wb, `quiniela-sospechosos-${date}.xlsx`)
+    } catch (e) {
+      error.value = e.response?.data?.error ?? 'Error al exportar'
+    } finally {
+      exporting.value = false
+    }
+  }
+
+  return {
+    entries, total, loading, detecting, exporting, error, scannedAt,
+    filterCode, filterSeverity,
+    fetchSuspicious, runDetection, exportExcel
+  }
 }

@@ -1,20 +1,30 @@
+import * as XLSX from 'xlsx'
+
+const EXPORT_LIMIT = 5000
+
 export function useMundialSuspicious() {
   const { $axios } = useNuxtApp()
 
   const suspects = ref([])
   const loading = ref(false)
   const running = ref(false)
+  const exporting = ref(false)
   const error = ref('')
   const total = ref(0)
   const page = ref(1)
   const limit = 20
+
+  const filterCode = ref(null)
+  const filterSeverity = ref(null)
 
   async function fetchSuspects(p = 1) {
     loading.value = true
     error.value = ''
     page.value = p
     try {
-      const { data } = await $axios.get('/backoffice/mundialista/suspicious', { params: { page: p, limit } })
+      const { data } = await $axios.get('/backoffice/mundialista/suspicious', {
+        params: { page: p, limit, code: filterCode.value || undefined, severity: filterSeverity.value || undefined }
+      })
       suspects.value = data.suspects ?? data.data ?? []
       total.value = data.total ?? suspects.value.length
     } catch (e) {
@@ -37,10 +47,36 @@ export function useMundialSuspicious() {
     }
   }
 
-  function reasonColor(r) {
-    if (r.includes('duplicado') || r.includes('ID') || r.includes('suspendido')) return 'error'
-    return 'warning'
+  async function exportExcel() {
+    exporting.value = true
+    error.value = ''
+    try {
+      const { data } = await $axios.get('/backoffice/mundialista/suspicious', {
+        params: { page: 1, limit: EXPORT_LIMIT, code: filterCode.value || undefined, severity: filterSeverity.value || undefined }
+      })
+      const rows = (data.suspects ?? []).map((s) => ({
+        alias: s.alias,
+        fase: s.phaseId,
+        ip: s.ip ?? '',
+        severidad: s.severity,
+        razones: s.reason.map((r) => r.label).join(' | '),
+        detalle: s.reason.map((r) => r.detail).filter(Boolean).join(' | ')
+      }))
+      const ws = XLSX.utils.json_to_sheet(rows)
+      const wb = XLSX.utils.book_new()
+      XLSX.utils.book_append_sheet(wb, ws, 'Sospechosos')
+      const date = new Date().toISOString().slice(0, 10)
+      XLSX.writeFile(wb, `mundialista-sospechosos-${date}.xlsx`)
+    } catch (e) {
+      error.value = e.response?.data?.error ?? 'Error al exportar'
+    } finally {
+      exporting.value = false
+    }
   }
 
-  return { suspects, loading, running, error, total, page, limit, fetchSuspects, runDetection, reasonColor }
+  return {
+    suspects, loading, running, exporting, error, total, page, limit,
+    filterCode, filterSeverity,
+    fetchSuspects, runDetection, exportExcel
+  }
 }
