@@ -104,41 +104,83 @@
     </v-dialog>
 
     <!-- Bonus questions dialog -->
-    <v-dialog v-model="bonusDialog" max-width="900">
+    <v-dialog v-model="bonusDialog" max-width="700">
       <v-card>
         <v-card-title class="pa-4">Preguntas Bonus — {{ selectedPhase?.title }}</v-card-title>
         <v-card-text>
+          <v-alert v-if="error" type="error" density="compact" variant="tonal" class="mb-3">{{ error }}</v-alert>
           <v-alert v-if="bonusForm.length === 0" type="info" density="compact" variant="tonal" class="mb-3">
-            Esta fase no tiene preguntas bonus. Agregá una para crear un criterio de desempate.
+            Esta fase todavía no tiene preguntas bonus. Agregá una para crear un criterio de desempate.
           </v-alert>
 
-          <v-card v-for="(row, i) in bonusForm" :key="i" variant="outlined" class="mb-3 pa-3">
-            <div class="d-flex gap-2 flex-wrap mb-2">
-              <v-text-field v-model="row.id" label="ID (sin espacios)" density="compact" variant="outlined" style="max-width:220px" />
-              <v-select v-model="row.type" :items="BONUS_TYPES" item-title="title" item-value="value" label="Tipo" density="compact" variant="outlined" style="max-width:200px" />
-              <v-text-field v-model="row.icon" label="Ícono" density="compact" variant="outlined" style="max-width:100px" />
-              <v-checkbox v-model="row.required" label="Obligatoria" density="compact" hide-details style="max-width:150px" />
-              <v-btn icon="mdi-delete" variant="text" color="error" size="small" @click="removeBonusQuestion(i)" />
+          <v-card v-for="(row, i) in bonusForm" :key="i" variant="outlined" class="mb-4 pa-4">
+            <div class="d-flex justify-space-between align-start mb-2">
+              <span class="text-subtitle-2 text-medium-emphasis">Pregunta #{{ i + 1 }}</span>
+              <v-btn icon="mdi-delete-outline" variant="text" color="error" size="small" @click="removeBonusQuestion(i)" />
             </div>
-            <v-text-field v-model="row.label" label="Pregunta (texto que ve el jugador)" density="compact" variant="outlined" class="mb-2" />
-            <div v-if="row.type === 'number'" class="d-flex gap-2">
-              <v-text-field v-model.number="row.min" label="Mínimo" type="number" density="compact" variant="outlined" style="max-width:150px" />
-              <v-text-field v-model.number="row.max" label="Máximo" type="number" density="compact" variant="outlined" style="max-width:150px" />
+
+            <v-text-field
+              v-model="row.label"
+              label="¿Qué le preguntamos al jugador?"
+              placeholder="Ej: ¿Cuántos goles se marcarán en total?"
+              variant="outlined"
+              class="mb-3"
+            />
+
+            <div class="d-flex gap-3 flex-wrap align-center mb-3">
+              <v-select
+                v-model="row.type"
+                :items="BONUS_TYPES"
+                item-title="title" item-value="value"
+                label="¿Cómo responde el jugador?"
+                variant="outlined" density="comfortable"
+                style="min-width:260px; flex:1"
+              />
+              <v-checkbox v-model="row.required" label="Obligatoria" density="comfortable" hide-details />
             </div>
-            <v-text-field
-              v-if="row.type === 'choice'"
-              v-model="row.optionsCsv"
-              label="Opciones (formato: valor:etiqueta, separadas por coma)"
-              hint="Ej: 0:0, 1:1, 2:2, 3:3, 4:4"
-              persistent-hint
-              density="compact" variant="outlined"
-            />
-            <v-text-field
-              v-if="row.type === 'team-select'"
-              v-model="row.excludeCsv"
-              label="Excluir preguntas (IDs separados por coma; usá 'champion' para excluir al campeón elegido)"
-              density="compact" variant="outlined"
-            />
+
+            <div class="mb-3">
+              <div class="text-caption text-medium-emphasis mb-1">Ícono (opcional, solo decorativo)</div>
+              <div class="d-flex gap-1 flex-wrap">
+                <v-btn
+                  v-for="ic in ICON_PRESETS" :key="ic"
+                  :variant="row.icon === ic ? 'flat' : 'outlined'"
+                  :color="row.icon === ic ? 'primary' : undefined"
+                  size="small" density="comfortable"
+                  @click="row.icon = ic"
+                >{{ ic }}</v-btn>
+              </div>
+            </div>
+
+            <!-- Tipo Número -->
+            <div v-if="row.type === 'number'" class="d-flex gap-3">
+              <v-text-field v-model.number="row.min" label="Valor mínimo permitido" type="number" density="comfortable" variant="outlined" style="max-width:220px" />
+              <v-text-field v-model.number="row.max" label="Valor máximo permitido" type="number" density="comfortable" variant="outlined" style="max-width:220px" />
+            </div>
+
+            <!-- Tipo Opción múltiple -->
+            <div v-if="row.type === 'choice'">
+              <div class="text-caption text-medium-emphasis mb-1">Opciones que puede elegir el jugador</div>
+              <div v-for="(opt, oi) in row.choiceOptions" :key="oi" class="d-flex gap-2 align-center mb-2">
+                <v-text-field v-model="row.choiceOptions[oi]" density="compact" variant="outlined" hide-details :placeholder="`Opción ${oi + 1}`" />
+                <v-btn icon="mdi-close" variant="text" size="small" @click="removeChoiceOption(row, oi)" />
+              </div>
+              <v-btn size="small" variant="tonal" prepend-icon="mdi-plus" @click="addChoiceOption(row)">Agregar opción</v-btn>
+            </div>
+
+            <!-- Tipo Selección de equipo -->
+            <div v-if="row.type === 'team-select'">
+              <div class="text-caption text-medium-emphasis mb-1">No permitir repetir el equipo elegido en:</div>
+              <v-checkbox v-model="row.excludeChampion" label="El equipo Campeón (la predicción principal de la fase)" density="compact" hide-details />
+              <v-checkbox
+                v-for="other in otherTeamSelectRows(i)"
+                :key="other._index"
+                v-model="row.excludeOtherIndexes"
+                :value="other._index"
+                :label="other.label || `Pregunta #${other._index + 1} (sin texto todavía)`"
+                density="compact" hide-details
+              />
+            </div>
           </v-card>
 
           <v-btn variant="tonal" prepend-icon="mdi-plus" @click="addBonusQuestion">Agregar pregunta</v-btn>
@@ -227,8 +269,9 @@ const {
   phases, loading, error,
   editDialog, confirmForceOpen, confirmForceClose, selectedPhase, editForm,
   fetchPhases, openEdit, saveEdit, forceOpen, forceClose, setAuto, fmtDate, phaseStatus,
-  bonusDialog, bonusForm, BONUS_TYPES,
+  bonusDialog, bonusForm, BONUS_TYPES, ICON_PRESETS,
   openBonusEdit, addBonusQuestion, removeBonusQuestion, saveBonusEdit,
+  addChoiceOption, removeChoiceOption, otherTeamSelectRows,
   teamsDialog, teamsForm, allTeams,
   openTeamsEdit, saveTeamsEdit
 } = useMundialistaPhases()

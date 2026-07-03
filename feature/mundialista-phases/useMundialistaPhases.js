@@ -89,71 +89,137 @@ export function useMundialistaPhases() {
   }
 
   // ── Preguntas bonus / desempate ──
+  // El jugador (Will) nunca ve ni escribe IDs internos, CSV, ni sintaxis
+  // valor:etiqueta -- todo eso se genera/parsea acá, a partir de texto plano.
   const BONUS_TYPES = [
-    { value: 'number',       title: 'Número' },
+    { value: 'number',       title: 'Número (el jugador escribe una cantidad)' },
     { value: 'boolean',      title: 'Sí / No' },
-    { value: 'choice',       title: 'Opción múltiple' },
+    { value: 'choice',       title: 'Opción múltiple (el jugador elige una)' },
     { value: 'team-select',  title: 'Selección de equipo' }
   ]
 
-  function toRowForm(q) {
-    return {
-      id: q.id ?? '',
-      type: q.type ?? 'number',
-      icon: q.icon ?? '⚽',
-      label: q.label ?? '',
-      required: q.required ?? true,
-      min: q.min ?? 0,
-      max: q.max ?? 100,
-      optionsCsv: (q.options ?? []).map(o => `${o.value}:${o.label}`).join(', '),
-      excludeCsv: (q.excludeQuestionIds ?? []).join(', ')
-    }
+  const ICON_PRESETS = ['⚽', '🥅', '🎯', '🏆', '🥈', '🥉', '🔢', '❓', '⏱️', '🟨', '🟥', '🎲']
+
+  const DIACRITICS_RE = new RegExp('[̀-ͯ]', 'g')
+
+  function slugify(text) {
+    const base = (text ?? '')
+      .normalize('NFD').replace(DIACRITICS_RE, '')
+      .toLowerCase().trim()
+      .replace(/[^a-z0-9]+/g, '_')
+      .replace(/^_+|_+$/g, '')
+      .slice(0, 40)
+    return base || 'pregunta'
+  }
+
+  function uniqueId(base, usedIds) {
+    let id = base
+    let n = 2
+    while (usedIds.has(id)) { id = `${base}_${n}`; n++ }
+    usedIds.add(id)
+    return id
   }
 
   function openBonusEdit(phase) {
     selectedPhase.value = phase
-    bonusForm.value = (phase.bonusQuestions ?? []).map(toRowForm)
+    const questions = phase.bonusQuestions ?? []
+    const idToIndex = new Map(questions.map((q, i) => [q.id, i]))
+    bonusForm.value = questions.map(q => ({
+      _id: q.id, // preservado para no romper respuestas ya guardadas con este ID; nunca se muestra
+      label: q.label ?? '',
+      type: q.type ?? 'number',
+      icon: q.icon ?? '⚽',
+      required: q.required ?? true,
+      min: q.min ?? 0,
+      max: q.max ?? 100,
+      choiceOptions: (q.options ?? []).map(o => String(o.label)),
+      excludeChampion: (q.excludeQuestionIds ?? []).includes('champion'),
+      excludeOtherIndexes: (q.excludeQuestionIds ?? [])
+        .filter(id => id !== 'champion' && idToIndex.has(id))
+        .map(id => idToIndex.get(id))
+    }))
     bonusDialog.value = true
   }
 
   function addBonusQuestion() {
-    bonusForm.value.push(toRowForm({}))
-  }
-
-  function removeBonusQuestion(index) {
-    bonusForm.value.splice(index, 1)
-  }
-
-  function parseOptionsCsv(csv) {
-    const parts = (csv ?? '').split(',').map(s => s.trim()).filter(Boolean)
-    if (parts.length === 0) return undefined
-    return parts.map(p => {
-      const [rawValue, rawLabel] = p.includes(':') ? p.split(':') : [p, p]
-      const num = Number(rawValue)
-      return { value: Number.isNaN(num) ? rawValue.trim() : num, label: (rawLabel ?? rawValue).trim() }
+    bonusForm.value.push({
+      _id: null,
+      label: '',
+      type: 'number',
+      icon: '⚽',
+      required: true,
+      min: 0,
+      max: 100,
+      choiceOptions: ['', '', ''],
+      excludeChampion: false,
+      excludeOtherIndexes: []
     })
   }
 
-  function parseCsvList(csv) {
-    const parts = (csv ?? '').split(',').map(s => s.trim()).filter(Boolean)
-    return parts.length > 0 ? parts : undefined
+  function removeBonusQuestion(index) {
+    // reacomoda las referencias de "no repetir equipo de la pregunta X" de las filas restantes
+    bonusForm.value.forEach(r => {
+      r.excludeOtherIndexes = r.excludeOtherIndexes
+        .filter(i => i !== index)
+        .map(i => (i > index ? i - 1 : i))
+    })
+    bonusForm.value.splice(index, 1)
+  }
+
+  function addChoiceOption(row) {
+    row.choiceOptions.push('')
+  }
+
+  function removeChoiceOption(row, i) {
+    row.choiceOptions.splice(i, 1)
+  }
+
+  // Otras preguntas de tipo "Selección de equipo" en el formulario actual,
+  // para armar los checkboxes de "no repetir equipo elegido en".
+  function otherTeamSelectRows(index) {
+    return bonusForm.value
+      .map((r, i) => ({ ...r, _index: i }))
+      .filter((r, i) => i !== index && r.type === 'team-select')
   }
 
   async function saveBonusEdit() {
-    loading.value = true
     error.value = ''
+    const emptyIndex = bonusForm.value.findIndex(r => !r.label.trim())
+    if (emptyIndex !== -1) {
+      error.value = `La pregunta #${emptyIndex + 1} no tiene texto. Completala o borrala con el ícono de basura.`
+      return
+    }
+
+    loading.value = true
     try {
-      const bonusQuestions = bonusForm.value.map(r => ({
-        id: r.id.trim(),
+      const usedIds = new Set(bonusForm.value.map(r => r._id).filter(Boolean))
+      const finalIds = bonusForm.value.map(r => r._id ?? uniqueId(slugify(r.label), usedIds))
+
+      const bonusQuestions = bonusForm.value.map((r, i) => ({
+        id: finalIds[i],
         type: r.type,
         icon: r.icon,
         label: r.label.trim(),
         required: !!r.required,
         min: r.type === 'number' ? Number(r.min) : undefined,
         max: r.type === 'number' ? Number(r.max) : undefined,
-        options: r.type === 'choice' ? parseOptionsCsv(r.optionsCsv) : undefined,
-        excludeQuestionIds: r.type === 'team-select' ? parseCsvList(r.excludeCsv) : undefined
+        options: r.type === 'choice'
+          ? r.choiceOptions
+              .map(o => o.trim())
+              .filter(Boolean)
+              .map(o => {
+                const num = Number(o)
+                return { value: Number.isNaN(num) ? o : num, label: o }
+              })
+          : undefined,
+        excludeQuestionIds: r.type === 'team-select'
+          ? [
+              ...(r.excludeChampion ? ['champion'] : []),
+              ...r.excludeOtherIndexes.map(idx => finalIds[idx]).filter(Boolean)
+            ]
+          : undefined
       }))
+
       await $axios.put(`/backoffice/mundialista/phases/${selectedPhase.value.id}`, { bonusQuestions })
       bonusDialog.value = false
       await fetchPhases()
@@ -244,8 +310,9 @@ export function useMundialistaPhases() {
     editDialog, confirmForceOpen, confirmForceClose, selectedPhase, editForm,
     fetchPhases, openEdit, saveEdit, forceOpen, forceClose, setAuto, fmtDate, phaseStatus,
 
-    bonusDialog, bonusForm, BONUS_TYPES,
+    bonusDialog, bonusForm, BONUS_TYPES, ICON_PRESETS,
     openBonusEdit, addBonusQuestion, removeBonusQuestion, saveBonusEdit,
+    addChoiceOption, removeChoiceOption, otherTeamSelectRows,
 
     teamsDialog, teamsForm, allTeams,
     openTeamsEdit, saveTeamsEdit
