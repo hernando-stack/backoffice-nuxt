@@ -8,7 +8,7 @@ const PHASES = [
 ]
 
 function submissionsToCsv(rows) {
-  const headers = ['phaseId', 'phaseType', 'userId', 'alias', 'company', 'status', 'score', 'ip', 'referrer', 'userAgent', 'createdAt', 'predictions']
+  const headers = ['phaseId', 'phaseType', 'userId', 'alias', 'company', 'status', 'score', 'ip', 'referrer', 'userAgent', 'createdAt', 'predictions', 'bonusAnswers']
   const escape = v => `"${String(v ?? '').replace(/"/g, '""')}"`
   const lines = [
     headers.join(','),
@@ -16,11 +16,12 @@ function submissionsToCsv(rows) {
       const preds = Array.isArray(r.predictions)
         ? r.predictions.map(p => `${p.matchId}:${p.outcome}`).join(' | ')
         : r.predictions?.teamId ?? JSON.stringify(r.predictions ?? '')
+      const bonus = (r.bonusAnswers ?? []).map(a => `${a.questionId}:${a.answer}`).join(' | ')
       return [
         r.phaseId, r.phaseType, r.userId, r.alias, r.company ?? '',
         r.status, r.score ?? '', r.ip ?? '', r.referrer ?? '', r.userAgent ?? '',
         r.createdAt ? new Date(r.createdAt).toLocaleString('es-AR', { hour12: false, timeZone: 'America/Argentina/Buenos_Aires' }) : '',
-        preds
+        preds, bonus
       ].map(escape).join(',')
     })
   ]

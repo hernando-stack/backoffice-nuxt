@@ -225,6 +225,19 @@
 
           <v-card-text v-else class="text-medium-emphasis text-caption">Sin pronósticos registrados.</v-card-text>
         </v-card>
+
+        <!-- Bonus / preguntas de desempate (opcional, solo cuartos y campeón) -->
+        <v-card v-if="selected.bonusAnswers?.length" variant="outlined" class="mt-4">
+          <v-card-title class="text-subtitle-2">Preguntas Bonus (desempate)</v-card-title>
+          <v-list density="compact">
+            <v-list-item
+              v-for="a in selected.bonusAnswers"
+              :key="a.questionId"
+              :title="a.questionId"
+              :subtitle="String(a.answer)"
+            />
+          </v-list>
+        </v-card>
       </div>
       <div v-else class="pa-4 text-center text-medium-emphasis">Cargando...</div>
     </v-navigation-drawer>
