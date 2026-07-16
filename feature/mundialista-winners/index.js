@@ -1,0 +1,1 @@
+export { useMundialistaWinners } from './useMundialistaWinners'
