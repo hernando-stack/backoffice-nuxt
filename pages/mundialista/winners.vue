@@ -22,7 +22,7 @@
         Importar Excel
       </v-btn>
       <input ref="fileInputRef" type="file" accept=".xlsx,.xls" style="display:none" @change="e => { onFileChange(e.target.files[0]); e.target.value = '' }" />
-      <v-btn prepend-icon="mdi-download" variant="tonal" :disabled="!winners.length" @click="downloadExcel">
+      <v-btn prepend-icon="mdi-download" variant="tonal" @click="openDownload">
         Descargar Excel
       </v-btn>
     </div>
@@ -63,6 +63,9 @@
     <v-dialog v-model="importDialog" max-width="700">
       <v-card>
         <v-card-title class="pa-4">Confirmar importación — {{ importPreview.length }} ganadores</v-card-title>
+        <v-alert type="info" density="compact" class="mx-4 mb-2">
+          Fase destino: <strong>{{ PHASE_LIST.find(p => p.id === importPhaseId)?.label ?? importPhaseId }}</strong>
+        </v-alert>
         <v-alert type="warning" density="compact" class="mx-4">Esto reemplazará TODOS los ganadores actuales de esta fase.</v-alert>
         <v-card-text>
           <v-table density="compact">
@@ -91,6 +94,25 @@
           <v-btn variant="text" @click="importDialog = false">Cancelar</v-btn>
           <v-btn color="primary" variant="flat" :loading="importLoading" @click="confirmImport">
             Confirmar importación
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
+    <!-- Download scope dialog -->
+    <v-dialog v-model="downloadDialog" max-width="420">
+      <v-card>
+        <v-card-title class="pa-4">Descargar Excel</v-card-title>
+        <v-card-text>
+          ¿Querés descargar los ganadores de todas las fases o solo de la fase actual
+          (<strong>{{ PHASE_LIST.find(p => p.id === selectedPhaseId)?.label }}</strong>)?
+        </v-card-text>
+        <v-card-actions class="pa-4 flex-wrap">
+          <v-spacer />
+          <v-btn variant="text" @click="downloadDialog = false">Cancelar</v-btn>
+          <v-btn variant="tonal" @click="downloadCurrentPhase">Solo fase actual</v-btn>
+          <v-btn color="primary" variant="flat" :loading="downloadAllLoading" @click="downloadAllPhases">
+            Todas las fases
           </v-btn>
         </v-card-actions>
       </v-card>
@@ -162,11 +184,13 @@ function openFilePicker() { fileInputRef.value?.click() }
 
 const {
   PHASE_LIST, selectedPhaseId, winners, loading, error,
-  importPreview, importErrors, importDialog, importLoading,
+  importPreview, importErrors, importDialog, importLoading, importPhaseId,
+  downloadDialog, downloadAllLoading,
   addDialog, addForm, addLoading,
   editDialog, editingWinner, editForm,
   deleteDialog, deletingWinner,
-  fetchWinners, onFileChange, confirmImport, downloadExcel,
+  fetchWinners, onFileChange, confirmImport,
+  openDownload, downloadCurrentPhase, downloadAllPhases,
   openAdd, confirmAdd, openEdit, saveEdit, openDelete, confirmDelete
 } = useMundialistaWinners()
 

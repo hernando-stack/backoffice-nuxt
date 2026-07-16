@@ -21,6 +21,10 @@ export function useMundialistaWinners() {
   const importErrors = ref([])
   const importDialog = ref(false)
   const importLoading = ref(false)
+  const importPhaseId = ref(null) // fase objetivo fijada al elegir el archivo, no al confirmar
+
+  const downloadDialog = ref(false)
+  const downloadAllLoading = ref(false)
 
   const editDialog = ref(false)
   const editingWinner = ref(null)
@@ -51,6 +55,7 @@ export function useMundialistaWinners() {
     if (!file) return
     importErrors.value = []
     importPreview.value = []
+    importPhaseId.value = selectedPhaseId.value // fijar la fase ahora, no leerla recien al confirmar
     const reader = new FileReader()
     reader.onload = (e) => {
       const wb = XLSX.read(e.target.result, { type: 'array' })
@@ -95,12 +100,15 @@ export function useMundialistaWinners() {
     importLoading.value = true
     error.value = ''
     try {
-      await $axios.post(`/backoffice/mundialista/phases/${selectedPhaseId.value}/winners/bulk`, {
+      // Usa la fase fijada en onFileChange, no selectedPhaseId.value: si el operador
+      // cambia el selector de fase mientras el dialogo de preview esta abierto, el
+      // import sigue yendo a la fase que tenia seleccionada al elegir el archivo.
+      await $axios.post(`/backoffice/mundialista/phases/${importPhaseId.value}/winners/bulk`, {
         winners: importPreview.value
       })
       importDialog.value = false
       importPreview.value = []
-      await fetchWinners()
+      if (importPhaseId.value === selectedPhaseId.value) await fetchWinners()
     } catch (e) {
       error.value = e.response?.data?.error ?? 'Error al importar ganadores'
     } finally {
@@ -108,20 +116,47 @@ export function useMundialistaWinners() {
     }
   }
 
-  function downloadExcel() {
-    const phaseLabel = PHASE_LIST.find(p => p.id === selectedPhaseId.value)?.label ?? selectedPhaseId.value
-    const rows = winners.value.map(w => ({
+  function winnersToRows(list) {
+    return list.map(w => ({
       Posición: w.position,
       Alias:    w.alias,
       Casino:   w.casino,
       Puntos:   w.points,
       Premio:   w.prize
     }))
-    const ws = XLSX.utils.json_to_sheet(rows)
+  }
+
+  function openDownload() {
+    downloadDialog.value = true
+  }
+
+  function downloadCurrentPhase() {
+    const ws = XLSX.utils.json_to_sheet(winnersToRows(winners.value))
     const wb = XLSX.utils.book_new()
     XLSX.utils.book_append_sheet(wb, ws, 'Ganadores')
     XLSX.writeFile(wb, `ganadores_${selectedPhaseId.value}.xlsx`)
-    return phaseLabel
+    downloadDialog.value = false
+  }
+
+  async function downloadAllPhases() {
+    downloadAllLoading.value = true
+    error.value = ''
+    try {
+      const wb = XLSX.utils.book_new()
+      for (const phase of PHASE_LIST) {
+        const { data } = await $axios.get(`/backoffice/mundialista/phases/${phase.id}/winners`)
+        const ws = XLSX.utils.json_to_sheet(winnersToRows(data.data ?? []))
+        // Nombre de hoja Excel: max 31 caracteres, sin : \ / ? * [ ]
+        const sheetName = phase.label.replace(/[:\\/?*[\]]/g, '').slice(0, 31)
+        XLSX.utils.book_append_sheet(wb, ws, sheetName)
+      }
+      XLSX.writeFile(wb, 'ganadores_todas_las_fases.xlsx')
+      downloadDialog.value = false
+    } catch (e) {
+      error.value = e.response?.data?.error ?? 'Error al descargar todas las fases'
+    } finally {
+      downloadAllLoading.value = false
+    }
   }
 
   function openAdd() {
@@ -190,11 +225,13 @@ export function useMundialistaWinners() {
 
   return {
     PHASE_LIST, selectedPhaseId, winners, loading, error,
-    importPreview, importErrors, importDialog, importLoading,
+    importPreview, importErrors, importDialog, importLoading, importPhaseId,
+    downloadDialog, downloadAllLoading,
     addDialog, addForm, addLoading,
     editDialog, editingWinner, editForm,
     deleteDialog, deletingWinner,
-    fetchWinners, onFileChange, confirmImport, downloadExcel,
+    fetchWinners, onFileChange, confirmImport,
+    openDownload, downloadCurrentPhase, downloadAllPhases,
     openAdd, confirmAdd, openEdit, saveEdit, openDelete, confirmDelete
   }
 }
